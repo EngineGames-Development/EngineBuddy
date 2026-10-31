@@ -1,0 +1,12 @@
+node_modules/
+out/
+dist/
+*.log
+
+# spike artifacts
+spikes/*/node_modules/
+spikes/*/events.jsonl
+spikes/*/layout.json
+spikes/*/shot-*.png
+spikes/agent/sandbox/
+spikes/window/quit

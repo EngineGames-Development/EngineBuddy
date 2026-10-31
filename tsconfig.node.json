@@ -1,0 +1,20 @@
+{
+  "//": "Everything that runs in Node/Electron main: main, preload, core, tools, security, integrations.",
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2023"],
+    "types": ["node"]
+  },
+  "include": [
+    "src/main/**/*",
+    "src/preload/**/*",
+    "src/core/**/*",
+    "src/tools/**/*",
+    "src/security/**/*",
+    "src/integrations/**/*",
+    "src/shared/**/*",
+    "test/**/*",
+    "electron.vite.config.ts",
+    "vitest.config.mts"
+  ]
+}

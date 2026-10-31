@@ -1,0 +1,50 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'">
+<style>
+  html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; user-select: none; }
+  #c { position: absolute; left: 90px; top: 90px; width: 120px; height: 120px; border-radius: 50%;
+       background: #1b1726; box-shadow: 0 0 24px 6px #8b5cf6aa, inset 0 0 0 2px #a78bfa; cursor: grab; }
+</style>
+</head>
+<body>
+<div id="c"></div>
+<script>
+  const c = document.getElementById('c');
+  const send = (type, data) => window.spike.send({ type, data });
+  let ignoring = true, dragging = null, moved = 0;
+
+  // Click-through: the window ignores the mouse except while the cursor is over the circle.
+  window.addEventListener('mousemove', (e) => {
+    if (dragging) return;
+    const over = document.elementFromPoint(e.clientX, e.clientY) === c;
+    if (over === ignoring) { ignoring = !over; window.spike.send({ type: 'ignore', value: ignoring }); }
+  });
+
+  // Custom drag: app-region:drag would swallow click/contextmenu/dblclick.
+  c.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) return;
+    c.setPointerCapture(e.pointerId);
+    dragging = { x: e.screenX, y: e.screenY }; moved = 0;
+  });
+  c.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    const dx = e.screenX - dragging.x, dy = e.screenY - dragging.y;
+    if (dx || dy) { window.spike.send({ type: 'drag', dx, dy }); moved += Math.abs(dx) + Math.abs(dy); }
+    dragging = { x: e.screenX, y: e.screenY };
+  });
+  c.addEventListener('pointerup', () => {
+    if (dragging && moved > 3) window.spike.send({ type: 'dragend' });
+    dragging = null;
+  });
+
+  c.addEventListener('click', () => { if (moved <= 3) send('click'); });
+  c.addEventListener('dblclick', () => send('dblclick'));
+  c.addEventListener('contextmenu', (e) => { e.preventDefault(); send('contextmenu'); });
+  document.addEventListener('click', (e) => { if (e.target !== c) send('click_transparent_area'); });
+  send('loaded', { dpr: window.devicePixelRatio });
+</script>
+</body>
+</html>

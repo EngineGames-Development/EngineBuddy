@@ -1,0 +1,48 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'">
+<style>
+  html, body { margin: 0; height: 100%; font: 14px system-ui; color: #111;
+    background: repeating-linear-gradient(45deg, #ffd166 0 20px, #06d6a0 20px 40px); }
+  .card { background: #fff; display: inline-block; padding: 10px 14px; margin: 12px; border-radius: 6px; max-width: 360px; }
+  li { list-style: none; margin: 4px 0; }
+  li::before { content: '○ '; color: #999; }
+  li.ok::before { content: '✓ '; color: #0a0; font-weight: bold; }
+</style>
+</head>
+<body>
+<div class="card">
+  <b>Window spike checklist</b> (ticks itself)
+  <ul id="list">
+    <li data-k="through">Click the stripes right next to the purple circle (should land here)</li>
+    <li data-k="toggle">Hover the circle (click-through turns off)</li>
+    <li data-k="click">Click the circle</li>
+    <li data-k="contextmenu">Right-click the circle</li>
+    <li data-k="dblclick">Double-click the circle</li>
+    <li data-k="drag">Drag the circle somewhere</li>
+    <li data-k="through2">Click the stripes next to it again after dragging</li>
+  </ul>
+  Close this window when done.
+</div>
+<script>
+  const done = new Set();
+  const tick = (k) => { done.add(k); document.querySelector(`li[data-k="${k}"]`)?.classList.add('ok'); };
+  // A click lands here only if it passed through the avatar window (or missed it entirely).
+  document.addEventListener('click', (e) => {
+    window.spike.send({ type: 'click', data: { x: e.screenX, y: e.screenY } });
+    tick(done.has('drag') ? 'through2' : 'through');
+  });
+  window.spike.onEvent((ev) => {
+    if (ev.who !== 'avatar') return;
+    if (ev.type === 'ignore' && ev.value === false) tick('toggle');
+    if (ev.type === 'click') tick('click');
+    if (ev.type === 'contextmenu') tick('contextmenu');
+    if (ev.type === 'dblclick') tick('dblclick');
+    if (ev.type === 'dragend') tick('drag');
+  });
+  window.spike.send({ type: 'loaded' });
+</script>
+</body>
+</html>

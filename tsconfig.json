@@ -1,0 +1,5 @@
+{
+  "//": "Editor entry point only. Type checking runs per environment: npm run typecheck.",
+  "files": [],
+  "references": [{ "path": "./tsconfig.node.json" }, { "path": "./tsconfig.web.json" }]
+}

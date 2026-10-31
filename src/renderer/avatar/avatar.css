@@ -1,0 +1,33 @@
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+  user-select: none;
+}
+
+#root {
+  display: grid;
+  place-items: center;
+}
+
+/* Step 1 placeholder. The real character (SVG rig) arrives in Step 4. */
+.placeholder {
+  width: 88px;
+  height: 88px;
+  border-radius: 24px;
+  background: #16131f;
+  box-shadow:
+    0 0 22px 4px rgb(139 92 246 / 55%),
+    inset 0 0 0 2px #a78bfa;
+  display: grid;
+  place-items: center;
+  color: #c4b5fd;
+  font:
+    600 22px/1 ui-monospace,
+    'Cascadia Code',
+    Consolas,
+    monospace;
+}
