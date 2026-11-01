@@ -19,10 +19,10 @@ function fakeIpc() {
 }
 
 describe('window.buddy', () => {
-  it('exposes exactly onEvent, send and window.{setClickThrough, moveBy}', () => {
+  it('exposes exactly onEvent, send and the window methods', () => {
     const api = createBuddyApi(fakeIpc().ipc);
     expect(Object.keys(api).sort()).toEqual(['onEvent', 'send', 'window']);
-    expect(Object.keys(api.window).sort()).toEqual(['moveBy', 'setClickThrough']);
+    expect(Object.keys(api.window).sort()).toEqual(['dragEnd', 'moveBy', 'scaleBy', 'setClickThrough']);
   });
 
   it('is frozen, so a renderer script cannot swap methods', () => {
@@ -37,10 +37,14 @@ describe('window.buddy', () => {
     api.send({ type: 'user_input', text: 'hey', source: 'bubble' });
     api.window.setClickThrough(true);
     api.window.moveBy(5, -3);
+    api.window.dragEnd();
+    api.window.scaleBy(1);
     expect(sent).toEqual([
       [IPC_CHANNELS.command, { type: 'user_input', text: 'hey', source: 'bubble' }],
       [IPC_CHANNELS.window, { type: 'set_click_through', enabled: true }],
       [IPC_CHANNELS.window, { type: 'move_by', dx: 5, dy: -3 }],
+      [IPC_CHANNELS.window, { type: 'drag_end' }],
+      [IPC_CHANNELS.window, { type: 'scale_by', steps: 1 }],
     ]);
   });
 

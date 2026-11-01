@@ -25,5 +25,7 @@ export interface BuddyApi {
   window: {
     setClickThrough(enabled: boolean): void;
     moveBy(dx: number, dy: number): void;
+    dragEnd(): void;
+    scaleBy(steps: number): void;
   };
 }

@@ -13,10 +13,14 @@ export interface CommandHandler {
   (command: BuddyCommand, from: BrowserWindow): void;
 }
 
+export interface WindowCommandHandler {
+  (command: WindowCommand, from: BrowserWindow): void;
+}
+
 // The trust boundary for renderer → main traffic (SECURITY.md §7). Every message must come from
 // the top-level frame of one of our own pages, and must parse against its schema. Anything else
 // is dropped and logged (without the payload, which may contain user text).
-export function registerIpc(onCommand: CommandHandler): void {
+export function registerIpc(onCommand: CommandHandler, onWindowCommand: WindowCommandHandler): void {
   ipcMain.on(IPC_CHANNELS.command, (event, payload: unknown) => {
     const win = trustedSenderWindow(event, IPC_CHANNELS.command);
     const command = win && parseOrReject(buddyCommandSchema, payload, IPC_CHANNELS.command);
@@ -26,23 +30,8 @@ export function registerIpc(onCommand: CommandHandler): void {
   ipcMain.on(IPC_CHANNELS.window, (event, payload: unknown) => {
     const win = trustedSenderWindow(event, IPC_CHANNELS.window);
     const command = win && parseOrReject(windowCommandSchema, payload, IPC_CHANNELS.window);
-    if (win && command) applyWindowCommand(win, command);
+    if (win && command) onWindowCommand(command, win);
   });
-}
-
-function applyWindowCommand(win: BrowserWindow, command: WindowCommand): void {
-  switch (command.type) {
-    case 'set_click_through':
-      // `forward` keeps mouse-move events flowing while ignoring clicks, so the renderer can
-      // notice the cursor coming back over the avatar (docs/decisions/001-window-spike.md).
-      win.setIgnoreMouseEvents(command.enabled, { forward: true });
-      break;
-    case 'move_by': {
-      const [x = 0, y = 0] = win.getPosition();
-      win.setPosition(x + command.dx, y + command.dy);
-      break;
-    }
-  }
 }
 
 function trustedSenderWindow(event: IpcMainEvent, channel: string): BrowserWindow | null {

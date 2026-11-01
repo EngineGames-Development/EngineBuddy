@@ -8,12 +8,21 @@ body,
   user-select: none;
 }
 
-#root {
+/* Laid out at scale 1 and scaled as a whole, so every size below is in base DIPs. */
+.stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+}
+
+.avatar-box {
+  position: absolute;
   display: grid;
   place-items: center;
 }
 
-/* Step 1 placeholder. The real character (SVG rig) arrives in Step 4. */
+/* Step 3 placeholder. The real character (SVG rig) arrives in Step 4. */
 .placeholder {
   width: 88px;
   height: 88px;
@@ -25,6 +34,7 @@ body,
   display: grid;
   place-items: center;
   color: #c4b5fd;
+  cursor: grab;
   font:
     600 22px/1 ui-monospace,
     'Cascadia Code',

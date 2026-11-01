@@ -3,7 +3,7 @@
 A desktop AI companion for developers: a small animated character that lives on your desktop,
 talks like a friend, and uses Claude Code (on your claude.ai subscription) to actually help.
 
-**Status:** Phase 1, step 1 of 11 (scaffold). See [ROADMAP.md](ROADMAP.md) and [docs/PHASE-1.md](docs/PHASE-1.md).
+**Status:** Phase 1, step 3 of 11 (avatar window shell). See [ROADMAP.md](ROADMAP.md) and [docs/PHASE-1.md](docs/PHASE-1.md).
 
 ## Run it
 

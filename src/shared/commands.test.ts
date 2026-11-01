@@ -30,9 +30,11 @@ describe('buddyCommandSchema', () => {
 });
 
 describe('windowCommandSchema', () => {
-  it('accepts click-through and a drag step', () => {
+  it('accepts click-through, a drag step, drag end and a scale step', () => {
     expect(accepts(windowCommandSchema, { type: 'set_click_through', enabled: true })).toBe(true);
     expect(accepts(windowCommandSchema, { type: 'move_by', dx: -12, dy: 7 })).toBe(true);
+    expect(accepts(windowCommandSchema, { type: 'drag_end' })).toBe(true);
+    expect(accepts(windowCommandSchema, { type: 'scale_by', steps: -1 })).toBe(true);
   });
 
   it.each([
@@ -42,6 +44,9 @@ describe('windowCommandSchema', () => {
     ['a missing field', { type: 'move_by', dx: 3 }],
     ['a non-boolean flag', { type: 'set_click_through', enabled: 'yes' }],
     ['an unknown window command', { type: 'set_bounds', x: 0, y: 0 }],
+    ['a fractional scale step', { type: 'scale_by', steps: 0.5 }],
+    ['a huge scale jump', { type: 'scale_by', steps: 40 }],
+    ['drag end with a position', { type: 'drag_end', x: 0, y: 0 }],
   ])('rejects %s', (_label, payload) => {
     expect(accepts(windowCommandSchema, payload)).toBe(false);
   });

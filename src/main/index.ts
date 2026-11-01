@@ -1,9 +1,12 @@
+import { join } from 'node:path';
 import { app } from 'electron';
 import type { BuddyCommand } from '../shared/commands';
 import { broadcastEvent } from './ipc/broadcast';
 import { registerIpc } from './ipc/ipc-router';
 import { hardenWebContents } from './security/harden';
-import { createAvatarWindow } from './windows/avatar-window';
+import { SettingsStore } from './settings/settings-store';
+import { createTray } from './tray';
+import { AvatarWindow } from './windows/avatar-window';
 
 // Until the AgentController exists (Step 5), commands only become events: the user's message is
 // broadcast as a `user_input` fact, so every window sees it. Nothing answers yet.
@@ -18,7 +21,7 @@ function handleCommand(command: BuddyCommand): void {
   }
 }
 
-// One EngineBuddy per desktop. A second launch just exits.
+// One EngineBuddy per desktop. A second launch exits, and the first one shows itself.
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
@@ -26,8 +29,33 @@ if (!app.requestSingleInstanceLock()) {
   app.on('window-all-closed', () => app.quit());
 
   void app.whenReady().then(() => {
-    registerIpc(handleCommand);
-    const avatar = createAvatarWindow();
-    avatar.once('show', () => console.log('[main] avatar window shown', avatar.getBounds()));
+    const settings = new SettingsStore(join(app.getPath('userData'), 'settings.json'));
+    const avatar = new AvatarWindow(settings);
+    avatar.win.once('show', () => console.log('[main] avatar shown at', avatar.avatarRect()));
+
+    // Pause = the Sleep mode: the avatar sleeps and (from Step 5) no turns run.
+    let paused = false;
+    const setPaused = (value: boolean) => {
+      paused = value;
+      broadcastEvent({ type: 'mode_changed', mode: paused ? 'sleep' : 'companion' });
+    };
+
+    registerIpc(handleCommand, (command, from) => {
+      if (from === avatar.win) avatar.handle(command);
+    });
+
+    const tray = createTray({
+      isVisible: () => avatar.visible,
+      setVisible: (visible) => avatar.setVisible(visible),
+      isPaused: () => paused,
+      setPaused,
+      exit: () => app.quit(),
+    });
+
+    app.on('second-instance', () => avatar.setVisible(true));
+    app.on('before-quit', () => {
+      settings.flush();
+      tray.destroy();
+    });
   });
 }

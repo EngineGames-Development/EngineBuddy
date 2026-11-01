@@ -25,12 +25,15 @@ export const buddyCommandSchema = z.discriminatedUnion('type', [
 export type BuddyCommand = z.infer<typeof buddyCommandSchema>;
 
 // Window commands act on the window that sent them; main resolves which one from the IPC sender.
-// Step 3 adds drag-end (persist + snap) and scale.
 const moveStep = z.number().int().min(-MAX_MOVE_STEP).max(MAX_MOVE_STEP);
 
 export const windowCommandSchema = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal('set_click_through'), enabled: z.boolean() }),
   z.strictObject({ type: z.literal('move_by'), dx: moveStep, dy: moveStep }),
+  /** The drag finished: main snaps to a nearby corner and saves the position. */
+  z.strictObject({ type: z.literal('drag_end') }),
+  /** Ctrl+scroll: grow or shrink by whole scale steps. */
+  z.strictObject({ type: z.literal('scale_by'), steps: z.number().int().min(-4).max(4) }),
 ]);
 
 export type WindowCommand = z.infer<typeof windowCommandSchema>;

@@ -27,6 +27,12 @@ export function createBuddyApi(ipc: RendererIpc): BuddyApi {
       moveBy(dx: number, dy: number) {
         ipc.send(IPC_CHANNELS.window, { type: 'move_by', dx, dy });
       },
+      dragEnd() {
+        ipc.send(IPC_CHANNELS.window, { type: 'drag_end' });
+      },
+      scaleBy(steps: number) {
+        ipc.send(IPC_CHANNELS.window, { type: 'scale_by', steps });
+      },
     }),
   } satisfies BuddyApi);
 }
