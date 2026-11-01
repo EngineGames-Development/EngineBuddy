@@ -261,7 +261,7 @@ describe('ClaudeCodeAgent (fake SDK)', () => {
     expect(hookOut).toMatchObject({
       hookSpecificOutput: {
         permissionDecision: 'deny',
-        permissionDecisionReason: expect.stringMatching(/can't run commands/),
+        permissionDecisionReason: expect.stringMatching(/run_command/),
       },
     });
 

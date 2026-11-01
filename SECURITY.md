@@ -62,7 +62,11 @@ input, after zod parsing and after path normalisation.
 | Format / partition / boot config (`bcdedit`, `diskpart`, `format`) | **BLOCKED** | |
 | Anything not listed | **BLOCKED** | |
 
-**Phase 1** ships with SAFE tools only. Every CONFIRM tool is treated as BLOCKED until the confirmation UI exists (Phase 2).
+**Current state** (docs/decisions/013): the confirmation window exists. Our own CONFIRM tools
+(`run_command`) run after you click Allow; built-in CONFIRM tools (Bash, Write, Edit, WebFetch, …)
+are still denied, because EngineBuddy doesn't run them itself and couldn't show you exactly what
+would run. `open_application` is SAFE for a fixed list of programs. Grep is BLOCKED until it can
+skip secret files.
 
 ---
 
@@ -96,7 +100,7 @@ for every tool, while `canUseTool` is skipped for read-only tools that Claude Co
 in `cwd`. `canUseTool` is the second gate. An integration test
 sends a real `Bash` request from the agent and asserts it was denied and logged.
 
-### Shell command classification (for `run_command`, from Phase 2)
+### Shell command classification (`run_command`, `src/security/policy/command-classifier.ts`)
 
 Commands are never "SAFE because they look harmless". A pattern classifier only *escalates*:
 

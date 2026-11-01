@@ -1,7 +1,7 @@
 // The shape of a tool (ARCHITECTURE.md §7). Defined in core so that `security` (which decides)
 // and `tools` (which implement) share it without importing each other.
 import type { z } from 'zod';
-import type { ToolCategory } from '../../shared/events';
+import type { ConfirmationRequest, ToolCategory } from '../../shared/events';
 
 export type Permission = 'SAFE' | 'CONFIRM' | 'BLOCKED';
 
@@ -39,6 +39,12 @@ export interface ToolDef<Shape extends z.ZodRawShape = any> {
   permission(input: z.infer<z.ZodObject<Shape>>, ctx: PolicyContext): PermissionVerdict;
   /** The activity-list line, built from the input (never from model prose). */
   activity(input: z.infer<z.ZodObject<Shape>>): string;
+  /**
+   * What the confirmation window shows (SECURITY.md §5), built from the validated input: the
+   * literal command, the exact paths. Required for any tool whose permission can be CONFIRM;
+   * without it, CONFIRM is denied.
+   */
+  describe?(input: z.infer<z.ZodObject<Shape>>): ConfirmationRequest;
   execute(input: z.infer<z.ZodObject<Shape>>, signal: AbortSignal): Promise<ToolResult>;
 }
 

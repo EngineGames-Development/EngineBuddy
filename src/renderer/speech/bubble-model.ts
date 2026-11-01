@@ -83,9 +83,13 @@ export function bubbleReducer(state: BubbleState, action: BubbleAction): BubbleS
     case 'mode_changed':
       return e.mode === 'sleep' ? { ...state, open: false } : state;
 
+    case 'confirm_resolved':
+      return state.narration?.startsWith('Waiting for your OK')
+        ? { ...state, narration: e.allowed ? 'You said yes. Running it…' : 'You said no.' }
+        : state;
+
     case 'user_idle':
     case 'observation':
-    case 'confirm_resolved':
       return state;
   }
 
@@ -120,7 +124,7 @@ export function bubbleReducer(state: BubbleState, action: BubbleAction): BubbleS
         ),
       };
     case 'confirm_request':
-      return state;
+      return { ...state, narration: 'Waiting for your OK in the confirmation window…' };
     case 'turn_end':
       return {
         ...state,

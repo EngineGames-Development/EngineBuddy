@@ -13,6 +13,7 @@ import { ClaudeCodeAgent } from '../../src/integrations/claude-code/claude-code-
 import { locateClaude } from '../../src/integrations/claude-code/environment';
 import type { AuditEntry } from '../../src/security/audit/audit-log';
 import { SecretPaths, canonical, type PathEnv } from '../../src/security/policy/paths';
+import { classifyCommand } from '../../src/security/policy/command-classifier';
 import { PolicyEngine } from '../../src/security/policy/policy-engine';
 import { ToolRunner } from '../../src/security/tool-runner';
 import { createToolRegistry } from '../../src/tools';
@@ -30,7 +31,7 @@ describe.skipIf(!live || !executable)('ClaudeCodeAgent (live)', () => {
     systemRoot: process.env['SystemRoot'] ?? 'C:\\Windows',
     vars: process.env,
   };
-  const registry = createToolRegistry();
+  const registry = createToolRegistry({ defaultCwd: sandbox, classify: classifyCommand });
   const audit: AuditEntry[] = [];
   const sink = { record: (e: AuditEntry) => void audit.push(e) };
   const policy = new PolicyEngine({

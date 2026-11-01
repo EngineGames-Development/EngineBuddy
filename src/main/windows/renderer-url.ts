@@ -2,7 +2,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { type BrowserWindow } from 'electron';
 
-export type RendererWindow = 'avatar';
+export type RendererWindow = 'avatar' | 'confirm';
 
 // In `npm run dev`, electron-vite serves renderers from a local dev server and passes its URL in
 // ELECTRON_RENDERER_URL. In a build, renderers are files next to the main bundle.

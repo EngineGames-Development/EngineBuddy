@@ -1,11 +1,11 @@
 // open_in_vscode (SAFE): open an existing file or folder in VS Code. The path is passed as one
-// argument to Code.exe with execFile: no shell, nothing executed from the path itself.
-import { execFile } from 'node:child_process';
+// argument to Code.exe: no shell, nothing executed from the path itself.
 import { existsSync } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { basename, delimiter, join, resolve } from 'node:path';
 import { z } from 'zod';
 import type { ToolDef } from '../../core/tools/tool-def';
+import { launchDetached, type Launcher } from './launch';
 
 /**
  * Where Code.exe is. `code` on PATH is a .cmd script, which Node can't run without a shell
@@ -32,7 +32,7 @@ const input = z.object({
 });
 
 export function createOpenInVsCode(
-  launch = launchDetached,
+  launch: Launcher = launchDetached,
   locate = findVsCode,
 ): ToolDef<typeof input.shape> {
   return {
@@ -59,21 +59,6 @@ export function createOpenInVsCode(
       return { ok: true, summary: `Opened ${basename(full) || full} in VS Code`, data: { path: full } };
     },
   };
-}
-
-/** Start the program and don't wait for it (VS Code keeps running). */
-function launchDetached(exe: string, args: string[]): Promise<void> {
-  return new Promise((resolveLaunch, reject) => {
-    // VS Code's own CLI sets this; if it leaked into our environment, Code.exe would run as Node.
-    const env = { ...process.env };
-    delete env['ELECTRON_RUN_AS_NODE'];
-    const child = execFile(exe, args, { env, windowsHide: false });
-    child.once('spawn', () => {
-      child.unref();
-      resolveLaunch();
-    });
-    child.once('error', reject);
-  });
 }
 
 export const openInVsCode = createOpenInVsCode();

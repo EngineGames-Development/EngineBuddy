@@ -3,6 +3,7 @@ import { app, dialog } from 'electron';
 import { AgentController } from '../core/agent/agent-controller';
 import { EventBus } from '../core/events/event-bus';
 import { localToolTurn } from '../integrations/local/local-tool-turn';
+import { ConfirmationBroker } from '../security/confirmations/confirmation-broker';
 import type { BuddyCommand } from '../shared/commands';
 import { setUpAgent } from './agent-setup';
 import { showContextMenu } from './context-menu';
@@ -12,6 +13,7 @@ import { hardenWebContents } from './security/harden';
 import { SettingsStore } from './settings/settings-store';
 import { createTray } from './tray';
 import { AvatarWindow } from './windows/avatar-window';
+import { ConfirmWindow } from './windows/confirm-window';
 
 /** The startup greeting: local lines, no tokens (docs/PHASE-1.md step 10). */
 const GREETING = ['Hey.', 'What are we building today?'];
@@ -44,7 +46,18 @@ if (!app.requestSingleInstanceLock()) {
     const sinceStart = () => `${Math.round(process.uptime() * 1000)} ms after start`;
     console.log(`[main] ready ${sinceStart()}`);
     const settings = new SettingsStore(join(app.getPath('userData'), 'settings.json'));
-    const setup = setUpAgent(settings.get());
+
+    // Confirmations (SECURITY.md §5): a main-owned window asks you; closing it means no.
+    const confirmWindow = new ConfirmWindow((id) => broker.answer(id, false));
+    const broker: ConfirmationBroker = new ConfirmationBroker({
+      presenter: confirmWindow,
+      onShow: (p) =>
+        bus.emit({ type: 'confirm_request', turnId: p.turnId ?? '', callId: p.id, request: p.request }),
+      onResolve: (p, outcome) =>
+        bus.emit({ type: 'confirm_resolved', callId: p.id, allowed: outcome === 'allowed' }),
+    });
+
+    const setup = setUpAgent(settings.get(), broker);
     agent = new AgentController({ bus, provider: setup.provider });
     if (setup.problem) console.warn(`[main] ${setup.problem}`);
     console.log(`[main] agent: ${setup.provider.id}`);
@@ -67,7 +80,10 @@ if (!app.requestSingleInstanceLock()) {
     const setPaused = (value: boolean) => {
       paused = value;
       const mode = paused ? 'sleep' : 'companion';
-      if (paused) agent.cancel();
+      if (paused) {
+        agent.cancel();
+        broker.denyAll();
+      }
       agent.setMode(mode);
       bus.emit({ type: 'mode_changed', mode });
     };
@@ -104,9 +120,17 @@ if (!app.requestSingleInstanceLock()) {
         exit,
       });
 
-    registerIpc(handleCommand, (command, from) => {
-      if (from === avatar.win) avatar.handle(command);
-    });
+    registerIpc(
+      handleCommand,
+      (command, from) => {
+        if (from === avatar.win) avatar.handle(command);
+      },
+      // Only the confirmation window showing this exact request may answer it.
+      (answer, from) => {
+        if (confirmWindow.owns(from.webContents, answer.id)) broker.answer(answer.id, answer.allowed);
+        else console.warn('[main] ignored a confirmation answer from the wrong window');
+      },
+    );
 
     const tray = createTray({
       isVisible: () => avatar.visible,
@@ -119,6 +143,7 @@ if (!app.requestSingleInstanceLock()) {
     app.on('second-instance', () => avatar.setVisible(true));
     app.on('before-quit', () => {
       settings.flush();
+      broker.denyAll();
       tray.destroy();
       void setup.provider.dispose();
     });

@@ -64,6 +64,8 @@ interface Turn {
   turnId: string;
   messages: AsyncQueue<TurnMessage>;
   translator: Translator;
+  /** Aborted on cancel: stops a running tool and withdraws a pending confirmation. */
+  abort: AbortController;
 }
 
 export class ClaudeCodeAgent implements AgentProvider {
@@ -101,6 +103,7 @@ export class ClaudeCodeAgent implements AgentProvider {
       turnId: ctx.turnId,
       messages: new AsyncQueue(),
       translator: new Translator(this.describe, this.lines),
+      abort: new AbortController(),
     };
     this.turn = turn;
     try {
@@ -130,6 +133,7 @@ export class ClaudeCodeAgent implements AgentProvider {
   async cancel(turnId: string): Promise<void> {
     if (this.turn?.turnId !== turnId || !this.session) return;
     this.turn.translator.markInterrupted();
+    this.turn.abort.abort();
     // interrupt(), not abort: acknowledged in ~15 ms and keeps the session alive (spike 0b).
     await this.session.query.interrupt();
   }
@@ -215,7 +219,8 @@ export class ClaudeCodeAgent implements AgentProvider {
     if (hookInput.hook_event_name !== 'PreToolUse') return {};
     const decision = this.opts.policy.evaluate(hookInput.tool_name, hookInput.tool_input);
     this.audit('hook', hookInput.tool_name, hookInput.tool_input, decision);
-    if (decision.allowed) return {};
+    // A confirmable request passes the gate: the ToolRunner asks you before it runs.
+    if (decision.allowed || decision.confirmable) return {};
     return {
       hookSpecificOutput: {
         hookEventName: 'PreToolUse',
@@ -228,7 +233,7 @@ export class ClaudeCodeAgent implements AgentProvider {
   private readonly canUseTool: CanUseTool = async (toolName, toolInput) => {
     const decision = this.opts.policy.evaluate(toolName, toolInput);
     this.audit('canUseTool', toolName, toolInput, decision);
-    return decision.allowed
+    return decision.allowed || decision.confirmable
       ? { behavior: 'allow', updatedInput: toolInput }
       : { behavior: 'deny', message: decision.reason };
   };
@@ -238,11 +243,11 @@ export class ClaudeCodeAgent implements AgentProvider {
       ...(this.turn ? { turnId: this.turn.turnId } : {}),
       tool,
       input,
-      event: d.allowed ? 'allow' : 'deny',
+      event: d.allowed ? 'allow' : d.confirmable ? 'ask' : 'deny',
       permission: d.permission,
       by,
       rule: d.rule,
-      ...(d.allowed ? {} : { reason: d.reason }),
+      ...(d.allowed || d.confirmable ? {} : { reason: d.reason }),
     });
   }
 
@@ -250,10 +255,10 @@ export class ClaudeCodeAgent implements AgentProvider {
   private createMcpServer(sdk: Sdk) {
     const tools = this.opts.registry.list().map((def) =>
       sdk.tool(def.name, def.description, def.input.shape, async (args) => {
-        const turnId = this.turn?.turnId;
+        const turn = this.turn;
         const out = await this.opts.runner.run(def.name, args, {
-          ...(turnId ? { turnId } : {}),
-          signal: new AbortController().signal,
+          ...(turn ? { turnId: turn.turnId } : {}),
+          signal: turn?.abort.signal ?? new AbortController().signal,
         });
         if (!out.result) return { content: [{ type: 'text', text: out.decision.reason }], isError: true };
         return {

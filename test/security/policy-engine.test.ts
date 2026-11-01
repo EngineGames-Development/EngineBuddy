@@ -133,7 +133,7 @@ describe('PolicyEngine: built-in tools', () => {
   });
 
   it('gives a friendly reason when it says no', () => {
-    expect(engine.evaluate('Bash', { command: 'dir' }).reason).toMatch(/can't run commands/);
+    expect(engine.evaluate('Bash', { command: 'dir' }).reason).toMatch(/run_command/);
     expect(engine.evaluate('Read', { file_path: '~/.ssh/id_rsa' }).reason).toMatch(/secrets/);
   });
 });

@@ -8,8 +8,11 @@ export interface AuditEntry {
   turnId?: string;
   tool: string;
   input: unknown;
-  /** 'allow' / 'deny' at the gate; 'result' after our own tool ran. */
-  event: 'allow' | 'deny' | 'result';
+  /**
+   * 'allow' / 'deny' at a gate; 'ask' when a gate passes a CONFIRM request on to be confirmed;
+   * 'result' after our own tool ran. `by: 'user'` marks your answer in the confirmation window.
+   */
+  event: 'allow' | 'deny' | 'ask' | 'result';
   permission?: string;
   /** Which gate or component recorded it. */
   by: string;

@@ -2,8 +2,10 @@ import { BrowserWindow, ipcMain, type IpcMainEvent } from 'electron';
 import type { z } from 'zod';
 import {
   buddyCommandSchema,
+  confirmAnswerSchema,
   windowCommandSchema,
   type BuddyCommand,
+  type ConfirmAnswer,
   type WindowCommand,
 } from '../../shared/commands';
 import { IPC_CHANNELS } from '../../shared/ipc';
@@ -20,7 +22,15 @@ export interface WindowCommandHandler {
 // The trust boundary for renderer → main traffic (SECURITY.md §7). Every message must come from
 // the top-level frame of one of our own pages, and must parse against its schema. Anything else
 // is dropped and logged (without the payload, which may contain user text).
-export function registerIpc(onCommand: CommandHandler, onWindowCommand: WindowCommandHandler): void {
+export interface ConfirmAnswerHandler {
+  (answer: ConfirmAnswer, from: BrowserWindow): void;
+}
+
+export function registerIpc(
+  onCommand: CommandHandler,
+  onWindowCommand: WindowCommandHandler,
+  onConfirmAnswer: ConfirmAnswerHandler,
+): void {
   ipcMain.on(IPC_CHANNELS.command, (event, payload: unknown) => {
     const win = trustedSenderWindow(event, IPC_CHANNELS.command);
     const command = win && parseOrReject(buddyCommandSchema, payload, IPC_CHANNELS.command);
@@ -31,6 +41,12 @@ export function registerIpc(onCommand: CommandHandler, onWindowCommand: WindowCo
     const win = trustedSenderWindow(event, IPC_CHANNELS.window);
     const command = win && parseOrReject(windowCommandSchema, payload, IPC_CHANNELS.window);
     if (win && command) onWindowCommand(command, win);
+  });
+
+  ipcMain.on(IPC_CHANNELS.confirm, (event, payload: unknown) => {
+    const win = trustedSenderWindow(event, IPC_CHANNELS.confirm);
+    const answer = win && parseOrReject(confirmAnswerSchema, payload, IPC_CHANNELS.confirm);
+    if (win && answer) onConfirmAnswer(answer, win);
   });
 }
 

@@ -39,3 +39,11 @@ export const windowCommandSchema = z.discriminatedUnion('type', [
 ]);
 
 export type WindowCommand = z.infer<typeof windowCommandSchema>;
+
+/** Your answer in the confirmation window. Main also checks which window sent it. */
+export const confirmAnswerSchema = z.strictObject({
+  id: z.string().regex(/^[a-z0-9-]{1,64}$/),
+  allowed: z.boolean(),
+});
+
+export type ConfirmAnswer = z.infer<typeof confirmAnswerSchema>;

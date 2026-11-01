@@ -2,8 +2,10 @@
 // Both gates on the Claude Code path (the PreToolUse hook and canUseTool) and our own tool runner
 // call it. Default deny: a tool that isn't in this table, or isn't registered, can't run.
 //
-// Phase 1 has no confirmation window, so CONFIRM is reported as CONFIRM but never allowed. Phase 2
-// adds the ConfirmationBroker, which asks you about exactly those decisions.
+// CONFIRM is never `allowed` here. For our own tools that can describe the request, the decision is
+// `confirmable`: the gates let it through to the ToolRunner, which asks you in the confirmation
+// window before running it. Built-in CONFIRM tools (Bash, Write, …) stay denied: we don't run them,
+// so we couldn't show you exactly what would run.
 import { z } from 'zod';
 import type { Permission, PolicyContext, ToolRegistry } from '../../core/tools/tool-def';
 import { isEnvFile, isInside, normalisePath, type PathEnv, type SecretPaths } from './paths';
@@ -21,6 +23,8 @@ export interface Decision {
   reason: string;
   /** Which rule decided, for the audit log. */
   rule: string;
+  /** CONFIRM on one of our own tools: may run if you click Allow (see ToolRunner). */
+  confirmable?: true;
 }
 
 export interface PolicyOptions {
@@ -38,7 +42,7 @@ const REASONS = {
   secret: "Not touching that. It's where secrets live.",
   outside: "That's outside your project folders, and for now I only read inside them.",
   envFile: "That's a .env file. Reading those will need your OK, and I can't ask for that yet.",
-  shell: "I can't run commands yet. That needs a confirmation step I don't have until Phase 2.",
+  shell: 'Use run_command for that instead: it shows you the exact command and asks you first.',
   write: "I can't change files yet. That needs your OK first, and I can't ask for that until Phase 2.",
   web: "I can't go online yet. That needs your OK first, and I can't ask for that until Phase 2.",
   unknown: "That tool isn't on my list, so no.",
@@ -100,8 +104,10 @@ export class PolicyEngine {
     if (!parsed.success) return deny(name, 'BLOCKED', REASONS.badInput, 'invalid-input');
     const verdict = tool.permission(parsed.data, this.context);
     if (verdict.permission === 'SAFE') return allow(name, `tool:${name}`);
-    if (verdict.permission === 'CONFIRM')
-      return this.confirm(name, verdict.reason ?? REASONS.needsConfirm, `tool:${name}`);
+    if (verdict.permission === 'CONFIRM') {
+      const d = this.confirm(name, verdict.reason ?? REASONS.needsConfirm, `tool:${name}`);
+      return tool.describe ? { ...d, confirmable: true } : d;
+    }
     return deny(name, 'BLOCKED', verdict.reason ?? REASONS.secret, `tool:${name}`);
   }
 

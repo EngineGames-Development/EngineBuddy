@@ -21,7 +21,7 @@ function fakeIpc() {
 describe('window.buddy', () => {
   it('exposes exactly onEvent, send and the window methods', () => {
     const api = createBuddyApi(fakeIpc().ipc);
-    expect(Object.keys(api).sort()).toEqual(['onEvent', 'onUi', 'send', 'window']);
+    expect(Object.keys(api).sort()).toEqual(['confirm', 'onEvent', 'onUi', 'send', 'window']);
     expect(Object.keys(api.window).sort()).toEqual([
       'dragEnd',
       'moveBy',
@@ -46,6 +46,7 @@ describe('window.buddy', () => {
     api.window.dragEnd();
     api.window.scaleBy(1);
     api.window.openContextMenu();
+    api.confirm.answer('c1-abc', false);
     expect(sent).toEqual([
       [IPC_CHANNELS.command, { type: 'user_input', text: 'hey', source: 'bubble' }],
       [IPC_CHANNELS.window, { type: 'set_click_through', enabled: true }],
@@ -53,6 +54,7 @@ describe('window.buddy', () => {
       [IPC_CHANNELS.window, { type: 'drag_end' }],
       [IPC_CHANNELS.window, { type: 'scale_by', steps: 1 }],
       [IPC_CHANNELS.window, { type: 'context_menu' }],
+      [IPC_CHANNELS.confirm, { id: 'c1-abc', allowed: false }],
     ]);
   });
 

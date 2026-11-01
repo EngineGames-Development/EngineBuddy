@@ -39,7 +39,10 @@ export default defineConfig({
       minify: true,
       sourcemap: true,
       rollupOptions: {
-        input: { avatar: resolve(__dirname, 'src/renderer/avatar/index.html') },
+        input: {
+          avatar: resolve(__dirname, 'src/renderer/avatar/index.html'),
+          confirm: resolve(__dirname, 'src/renderer/confirm/index.html'),
+        },
       },
     },
   },

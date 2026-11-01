@@ -1,0 +1,124 @@
+/* A fixed visual frame that model text can't imitate: it lives in its own window. */
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  background: #14111c;
+  color: #ece9f5;
+  font:
+    13px/1.45 'Segoe UI Variable Text',
+    'Segoe UI',
+    system-ui,
+    sans-serif;
+}
+
+.confirm {
+  box-sizing: border-box;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 2px solid #f59e0b;
+  margin: 0;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  -webkit-app-region: drag;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #f59e0b;
+}
+
+h1 {
+  flex: 1;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.timer {
+  color: #a59cc0;
+  font-variant-numeric: tabular-nums;
+}
+
+.target {
+  margin: 0;
+  flex: 1;
+  min-height: 60px;
+  overflow: auto;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #0b0910;
+  border: 1px solid rgb(245 158 11 / 40%);
+  font:
+    13px/1.45 'Cascadia Code',
+    Consolas,
+    monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+
+.details {
+  margin: 0;
+  padding-left: 18px;
+  color: #c9c2dd;
+  font-size: 12px;
+}
+
+.explanation {
+  color: #c4b5fd;
+  font-size: 12px;
+  font-style: italic;
+}
+
+.explanation span {
+  font-style: normal;
+  color: #8b84a3;
+}
+
+footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+button {
+  min-width: 96px;
+  height: 32px;
+  border-radius: 8px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:focus-visible {
+  outline: 2px solid #c4b5fd;
+  outline-offset: 2px;
+}
+
+.cancel {
+  border: 1px solid #6b6385;
+  background: #2a2438;
+  color: #ece9f5;
+}
+
+.allow {
+  border: 1px solid #b45309;
+  background: #92400e;
+  color: #fff7ed;
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}

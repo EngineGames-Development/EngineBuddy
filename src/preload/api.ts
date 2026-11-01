@@ -42,5 +42,10 @@ export function createBuddyApi(ipc: RendererIpc): BuddyApi {
         ipc.send(IPC_CHANNELS.window, { type: 'context_menu' });
       },
     }),
+    confirm: Object.freeze({
+      answer(id: string, allowed: boolean) {
+        ipc.send(IPC_CHANNELS.confirm, { id, allowed });
+      },
+    }),
   } satisfies BuddyApi);
 }

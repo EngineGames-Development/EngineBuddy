@@ -8,6 +8,8 @@ import { ClaudeCodeAgent } from '../integrations/claude-code/claude-code-agent';
 import { locateClaude } from '../integrations/claude-code/environment';
 import { MockAgent } from '../integrations/mock/mock-agent';
 import { AuditLog } from '../security/audit/audit-log';
+import type { ConfirmationBroker } from '../security/confirmations/confirmation-broker';
+import { classifyCommand } from '../security/policy/command-classifier';
 import { SecretPaths, normalisePath, type PathEnv } from '../security/policy/paths';
 import { PolicyEngine } from '../security/policy/policy-engine';
 import { ToolRunner } from '../security/tool-runner';
@@ -26,7 +28,7 @@ export interface AgentSetup {
  * Builds the tool and security stack and the agent. Claude Code works in the first project root;
  * with none configured, in an empty `userData/workspace` folder (so it can't wander anywhere).
  */
-export function setUpAgent(settings: Readonly<Settings>): AgentSetup {
+export function setUpAgent(settings: Readonly<Settings>, broker: ConfirmationBroker): AgentSetup {
   const userData = app.getPath('userData');
   const env: PathEnv = {
     home: homedir(),
@@ -44,10 +46,14 @@ export function setUpAgent(settings: Readonly<Settings>): AgentSetup {
     .map((p) => normalisePath(p, { cwd, env }))
     .flatMap((n) => (n.ok ? [n.path] : []));
 
-  const registry = createToolRegistry();
+  const registry = createToolRegistry({
+    defaultCwd: cwd,
+    classify: classifyCommand,
+    systemRoot: env.systemRoot,
+  });
   const audit = new AuditLog(join(userData, 'logs'));
   const policy = new PolicyEngine({ registry, secrets: new SecretPaths(env), env, projectRoots: roots, cwd });
-  const runner = new ToolRunner(registry, policy, audit);
+  const runner = new ToolRunner(registry, policy, audit, broker);
 
   if (settings.agent === 'mock') return { provider: new MockAgent(), registry, runner };
 

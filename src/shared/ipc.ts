@@ -12,6 +12,8 @@ export const IPC_CHANNELS = {
   window: 'buddy:window',
   /** main → one renderer: a UiRequest for that window only (e.g. open the bubble). */
   ui: 'buddy:ui',
+  /** confirm window → main: your answer. Main accepts it only from the confirmation window. */
+  confirm: 'buddy:confirm',
 } as const;
 
 /**
@@ -39,5 +41,9 @@ export interface BuddyApi {
     scaleBy(steps: number): void;
     /** Right-click on the avatar: main shows the context menu. */
     openContextMenu(): void;
+  };
+  /** Only works from the confirmation window; main ignores it from anywhere else. */
+  confirm: {
+    answer(id: string, allowed: boolean): void;
   };
 }
