@@ -29,4 +29,12 @@
 
 - `npm run check`: 298 tests pass (new: Ollama status, recommendation, pull progress and errors,
   setup commands accept only the offered models).
-- The Store workflow and the assistant UI are verified in the next steps (CI run, live app).
+- Live, built app, the user's Ollama with `qwen3:8b` (Ryzen 3 3200G, 14 GB RAM): "Wie geht es
+  meinem PC?" called get_system_info and answered in German; "Was ist der Ryzen 3 3200G?" called
+  search_wikipedia and cited the article (the summary had factual slips: the limits of an 8 B
+  model); read_web_page to 192.168.178.1 was refused (audit: deny), and the model explained it
+  without retrying. Answers took 1–3 minutes on this PC with RAM nearly full, which is why the
+  assistant recommends `qwen3:4b` below 16 GB.
+- With the configured model already installed, Settings shows no setup section (as intended).
+- Not verified yet: the Store workflow on GitHub (run it by hand once), the assistant's download
+  flow end to end in the UI (covered by unit tests with a fake Ollama).

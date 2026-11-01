@@ -86,6 +86,8 @@ scope: an attacker who already runs code as you.
   the user installs Ollama, and models are pulled by Ollama itself on loopback.
 - The Store package (`appx`) is built in its own workflow and only uploaded as a workflow
   artifact; it installs only after the Store signs it.
+- Live with `qwen3:8b`: real tool calls (get_system_info, search_wikipedia) through the
+  ToolRunner; read_web_page to a LAN address denied and audited; no retry.
 - PRIVACY.md states what is stored and what leaves the PC (only web requests the user's questions
   cause, when Internet is on).
 
