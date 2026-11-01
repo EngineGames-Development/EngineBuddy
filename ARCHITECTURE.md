@@ -271,7 +271,7 @@ Built on `@anthropic-ai/claude-agent-sdk`'s `query()`:
 | `hooks.PreToolUse` | **Primary gate**: every tool request passes through **our** PolicyEngine. It's the only callback that fires for *every* tool (spike 0b, finding 2) |
 | `canUseTool` | Second gate; later also the CONFIRM prompt hook. **Not** called for read-only tools Claude Code auto-allows in `cwd` |
 | `settingSources: []` + `strictMcpConfig: true` | Don't load your personal Claude settings or your claude.ai connectors (both leaked in otherwise; spike 0b, finding 3) |
-| `tools: ['Read', 'Glob', 'Grep']` | Only the built-ins we gate; keeps the prompt small |
+| `tools: ['Read', 'Glob', 'Bash']` | Only the built-ins we gate; keeps the prompt small. Bash is listed so a request for it reaches our gates and is refused visibly and audited; Grep stays out until it can skip secret files (docs/decisions/009, 010) |
 | `cwd` | The active project root |
 | `query.interrupt()` | Cancel button / "stop": acknowledged in 15 ms. `abortController` only for teardown (it kept streaming for 7 s) |
 | Streaming-input mode (one long-lived `query`) | One warm session, because a cold start takes ~14 s to `init` (spike 0b) |

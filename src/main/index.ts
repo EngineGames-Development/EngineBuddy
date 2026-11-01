@@ -2,8 +2,8 @@ import { join } from 'node:path';
 import { app } from 'electron';
 import { AgentController } from '../core/agent/agent-controller';
 import { EventBus } from '../core/events/event-bus';
-import { MockAgent } from '../integrations/mock/mock-agent';
 import type { BuddyCommand } from '../shared/commands';
+import { setUpAgent } from './agent-setup';
 import { broadcastEvent } from './ipc/broadcast';
 import { registerIpc } from './ipc/ipc-router';
 import { hardenWebContents } from './security/harden';
@@ -14,9 +14,7 @@ import { AvatarWindow } from './windows/avatar-window';
 const bus = new EventBus();
 bus.on(broadcastEvent);
 
-// Step 5: the MockAgent answers, so the whole UI path works without Claude. Step 8 swaps in
-// ClaudeCodeAgent behind the same interface.
-const agent = new AgentController({ bus, provider: new MockAgent() });
+let agent: AgentController;
 
 function handleCommand(command: BuddyCommand): void {
   switch (command.type) {
@@ -39,6 +37,12 @@ if (!app.requestSingleInstanceLock()) {
 
   void app.whenReady().then(() => {
     const settings = new SettingsStore(join(app.getPath('userData'), 'settings.json'));
+    const setup = setUpAgent(settings.get());
+    agent = new AgentController({ bus, provider: setup.provider });
+    if (setup.problem) console.warn(`[main] ${setup.problem}`);
+    console.log(`[main] agent: ${setup.provider.id}`);
+    setup.provider.prewarm?.().catch((error: unknown) => console.warn('[main] prewarm failed:', error));
+
     const avatar = new AvatarWindow(settings);
     avatar.win.once('show', () => console.log('[main] avatar shown at', avatar.avatarRect()));
 
@@ -68,6 +72,7 @@ if (!app.requestSingleInstanceLock()) {
     app.on('before-quit', () => {
       settings.flush();
       tray.destroy();
+      void setup.provider.dispose();
     });
   });
 }

@@ -1,7 +1,7 @@
 // MockAgent: plays scripted turns with realistic timing, so all UI work (avatar, bubble, menu)
 // runs without Claude and without spending tokens (docs/PHASE-1.md step 5). The scripts mirror
 // the Phase 1 demo: a plain question, a system check, and a refused command.
-import type { AgentEvent, AgentProvider, TurnInput } from '../../core/agent/agent-provider';
+import type { AgentEvent, AgentProvider, TurnContext, TurnInput } from '../../core/agent/agent-provider';
 import { sleep } from '../../core/agent/sleep';
 
 type Step = { wait: number; event: AgentEvent } | { wait: number; stream: string };
@@ -90,7 +90,7 @@ export class MockAgent implements AgentProvider {
 
   constructor(private readonly timing: MockTiming = { speed: 1 }) {}
 
-  async *startTurn(input: TurnInput, ctx: { turnId: string }): AsyncIterable<AgentEvent> {
+  async *startTurn(input: TurnInput, ctx: TurnContext): AsyncIterable<AgentEvent> {
     const abort = new AbortController();
     this.running.set(ctx.turnId, abort);
     const wait = (ms: number) => sleep(ms * this.timing.speed, abort.signal);

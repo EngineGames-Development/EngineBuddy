@@ -14,6 +14,14 @@ export const settingsSchema = z.object({
   lastDisplayId: z.string().optional().catch(undefined),
   /** How long the bubble stays after a reply (it waits while you hover or type). */
   bubbleDismissSeconds: z.number().min(3).max(600).catch(12),
+  /** Which brain: Claude Code on your subscription, or the scripted mock (no tokens). */
+  agent: z.enum(['claude-code', 'mock']).catch('claude-code'),
+  /** Path to claude.exe. Empty: ~/.local/bin/claude.exe, then PATH. */
+  claudeExecutable: z.string().optional().catch(undefined),
+  /** Model alias or ID for Claude Code (e.g. "sonnet"). Empty: Claude Code's default. */
+  claudeModel: z.string().optional().catch(undefined),
+  /** Folders EngineBuddy may read freely. The first one is the agent's working folder. */
+  projectRoots: z.array(z.string()).catch([]),
 });
 
 export type Settings = z.infer<typeof settingsSchema>;

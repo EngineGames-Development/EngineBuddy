@@ -8,6 +8,10 @@ describe('parseSettings', () => {
       positions: {},
       lastDisplayId: undefined,
       bubbleDismissSeconds: 12,
+      agent: 'claude-code',
+      claudeExecutable: undefined,
+      claudeModel: undefined,
+      projectRoots: [],
     });
     expect(parseSettings('nope')).toEqual(parseSettings({}));
   });
@@ -18,6 +22,10 @@ describe('parseSettings', () => {
       positions: { '7': { x: 10, y: 20 } },
       lastDisplayId: '7',
       bubbleDismissSeconds: 30,
+      agent: 'mock',
+      claudeExecutable: 'D:\\claude.exe',
+      claudeModel: 'sonnet',
+      projectRoots: ['D:\\code'],
     };
     expect(parseSettings(good)).toEqual(good);
   });
