@@ -1,8 +1,8 @@
 {
   "name": "enginebuddy",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
-  "description": "A desktop AI companion for developers, powered by Claude Code.",
+  "description": "A free desktop AI companion for developers, running a local model via Ollama.",
   "main": "out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
@@ -40,7 +40,6 @@
     "vitest": "5.0.5"
   },
   "dependencies": {
-    "@anthropic-ai/claude-agent-sdk": "0.3.316",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "zod": "4.6.7"
