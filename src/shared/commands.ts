@@ -98,6 +98,7 @@ export const settingsCommandSchema = z.discriminatedUnion('type', [
   /** Setup assistant: check again, open ollama.com in the browser, download a model, stop it. */
   z.strictObject({ type: z.literal('setup_check') }),
   z.strictObject({ type: z.literal('setup_get_ollama') }),
+  z.strictObject({ type: z.literal('setup_start_ollama') }),
   z.strictObject({ type: z.literal('setup_pull'), model: z.enum(SETUP_MODELS) }),
   z.strictObject({ type: z.literal('setup_cancel') }),
 ]);

@@ -1,6 +1,10 @@
 // First-run setup: is Ollama there, which models does it have, and downloading the recommended one
 // through Ollama's own /api/pull. EngineBuddy never downloads or runs installers itself: Ollama is
 // installed by the user from ollama.com, and models come from Ollama's library through Ollama.
+import { spawn } from 'node:child_process';
+import { existsSync } from 'node:fs';
+import { totalmem } from 'node:os';
+import { join } from 'node:path';
 import { z } from 'zod';
 import { SETUP_MODELS, type SetupModel } from '../../shared/settings-view';
 
@@ -19,9 +23,50 @@ const pullChunk = z.object({
   error: z.string().optional(),
 });
 
-export async function ollamaStatus(baseUrl: string, fetchFn: typeof fetch = fetch): Promise<OllamaStatus> {
+/** Where Ollama's Windows installer puts its tray app (it starts the server), if it's there. */
+export function ollamaAppPath(
+  env: NodeJS.ProcessEnv = process.env,
+  exists: (p: string) => boolean = existsSync,
+): string | undefined {
+  const local = env['LOCALAPPDATA'];
+  if (!local) return undefined;
+  const app = join(local, 'Programs', 'Ollama', 'ollama app.exe');
+  return exists(app) ? app : undefined;
+}
+
+/** Start the installed Ollama (its own tray app, a fixed path, no arguments). False if not installed. */
+export function startOllama(appPath = ollamaAppPath()): boolean {
+  if (!appPath) return false;
   try {
-    const signal = AbortSignal.timeout(3000);
+    spawn(appPath, [], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Ask until Ollama answers or `timeoutMs` passes (it takes a few seconds to come up). */
+export async function waitForOllama(
+  baseUrl: string,
+  timeoutMs = 20_000,
+  fetchFn: typeof fetch = fetch,
+): Promise<boolean> {
+  const until = Date.now() + timeoutMs;
+  while (Date.now() < until) {
+    if ((await ollamaStatus(baseUrl, fetchFn, 2000)).running) return true;
+    await new Promise((r) => setTimeout(r, 1000));
+  }
+  return false;
+}
+
+export async function ollamaStatus(
+  baseUrl: string,
+  fetchFn: typeof fetch = fetch,
+  // Generous: a busy Ollama (loading a big model) can take a while to answer.
+  timeoutMs = 10_000,
+): Promise<OllamaStatus> {
+  try {
+    const signal = AbortSignal.timeout(timeoutMs);
     const [version, tags] = await Promise.all([
       fetchFn(`${baseUrl}/api/version`, { signal }).then((r) => r.json()),
       fetchFn(`${baseUrl}/api/tags`, { signal }).then((r) => r.json()),
@@ -40,6 +85,11 @@ export async function ollamaStatus(baseUrl: string, fetchFn: typeof fetch = fetc
 /** The best model this PC can run comfortably: 8 B from 16 GB RAM, else 4 B. */
 export function recommendedModel(totalMemBytes: number): SetupModel {
   return totalMemBytes >= 15 * 1024 ** 3 ? 'qwen3:8b' : 'qwen3:4b';
+}
+
+/** The model when Settings names none: the recommendation for this PC. */
+export function defaultModel(): SetupModel {
+  return recommendedModel(totalmem());
 }
 
 /** `qwen3:8b` is installed as `qwen3:8b`; `qwen3` alone would be `qwen3:latest`. */

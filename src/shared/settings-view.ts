@@ -14,6 +14,8 @@ export type SetupModel = (typeof SETUP_MODELS)[number];
 export interface SetupView {
   /** Ollama answers on this PC. */
   ollama: boolean;
+  /** Ollama is installed (its app is in the usual place), whether or not it runs. */
+  installed: boolean;
   /** The model in Settings is downloaded. */
   modelReady: boolean;
   recommended: SetupModel;

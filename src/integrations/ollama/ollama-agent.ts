@@ -14,7 +14,9 @@ import type { ToolRegistry } from '../../core/tools/tool-def';
 import type { ToolRunner } from '../../security/tool-runner';
 
 export const OLLAMA_DEFAULT_URL = 'http://127.0.0.1:11434';
-export const OLLAMA_DEFAULT_MODEL = 'qwen3:8b';
+/** How long Ollama keeps the model in memory after a request. Its default (5 min) means a long
+ * reload before the first answer after every short break; on a CPU-only PC that's most of the wait. */
+const KEEP_ALIVE = '30m';
 /** Tool rounds per turn: enough for "check, then fix", short enough that a confused model stops. */
 const MAX_ROUNDS = 8;
 /** Messages kept per conversation (small models have small context windows). */
@@ -31,6 +33,8 @@ export interface OllamaOptions {
   /** Where conversations are kept, so reopening a chat continues it. */
   storeDir?: string;
   texts?: OllamaTexts;
+  /** Ollama didn't answer: try to start it, resolve true once it runs. */
+  ensureRunning?: () => Promise<boolean>;
   fetch?: typeof fetch;
 }
 
@@ -202,7 +206,23 @@ export class OllamaAgent implements AgentProvider {
   }
 
   private async *chat(signal: AbortSignal): AsyncIterable<z.infer<typeof chunkSchema>> {
-    const res = await this.fetch(`${this.opts.baseUrl}/api/chat`, {
+    let res: Response;
+    try {
+      res = await this.post(signal);
+    } catch (error) {
+      // Not running (e.g. its tray app was closed): start it once and try again.
+      if (signal.aborted || !this.opts.ensureRunning || !(await this.opts.ensureRunning())) throw error;
+      res = await this.post(signal);
+    }
+    if (!res.ok || !res.body) {
+      const body = await res.text().catch(() => '');
+      throw new OllamaError(body || `HTTP ${res.status}`, res.status);
+    }
+    yield* this.readLines(res.body);
+  }
+
+  private post(signal: AbortSignal): Promise<Response> {
+    return this.fetch(`${this.opts.baseUrl}/api/chat`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
@@ -211,16 +231,17 @@ export class OllamaAgent implements AgentProvider {
         tools: this.toolSchemas(),
         stream: true,
         think: false,
+        keep_alive: KEEP_ALIVE,
       }),
       signal,
     });
-    if (!res.ok || !res.body) {
-      const body = await res.text().catch(() => '');
-      throw new OllamaError(body || `HTTP ${res.status}`, res.status);
-    }
+  }
+
+  /** Ollama streams one JSON object per line. */
+  private async *readLines(body: ReadableStream<Uint8Array>): AsyncIterable<z.infer<typeof chunkSchema>> {
     const decoder = new TextDecoder();
     let buffer = '';
-    for await (const bytes of res.body as AsyncIterable<Uint8Array>) {
+    for await (const bytes of body as AsyncIterable<Uint8Array>) {
       buffer += decoder.decode(bytes, { stream: true });
       let nl: number;
       while ((nl = buffer.indexOf('\n')) >= 0) {
@@ -246,7 +267,25 @@ export class OllamaAgent implements AgentProvider {
       if (/does not support tools/i.test(error.message)) return this.texts.noTools(this.opts.model);
       return this.texts.said(error.message.slice(0, 200));
     }
+    // Shown to the user in the chat; the details go to the terminal for anyone debugging.
+    console.warn('[ollama] request failed:', error);
     return this.texts.notRunning(this.opts.model);
+  }
+
+  /** Load the model into memory in the background (at app start), so the first answer is quicker. */
+  async prewarm(): Promise<void> {
+    const load = () =>
+      this.fetch(`${this.opts.baseUrl}/api/generate`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        // No prompt: Ollama just loads the model and keeps it.
+        body: JSON.stringify({ model: this.opts.model, keep_alive: KEEP_ALIVE }),
+      });
+    try {
+      await load();
+    } catch {
+      if (this.opts.ensureRunning && (await this.opts.ensureRunning())) await load().catch(() => undefined);
+    }
   }
 
   async cancel(turnId: string): Promise<void> {

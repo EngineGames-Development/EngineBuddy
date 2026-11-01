@@ -15,12 +15,8 @@ import { ToolRunner } from '../security/tool-runner';
 import { createToolRegistry } from '../tools';
 import type { MemoryStore } from '../tools/memory/memory';
 import { PERSONALITY_PROMPT, contextPrompt } from '../core/personality/personality';
-import {
-  OLLAMA_DEFAULT_MODEL,
-  OLLAMA_DEFAULT_URL,
-  OllamaAgent,
-  isLoopbackUrl,
-} from '../integrations/ollama/ollama-agent';
+import { OLLAMA_DEFAULT_URL, OllamaAgent, isLoopbackUrl } from '../integrations/ollama/ollama-agent';
+import { defaultModel, ollamaAppPath, startOllama, waitForOllama } from '../integrations/ollama/ollama-setup';
 import { LANGUAGE_NAMES, translator, type Lang } from '../shared/i18n';
 import type { Settings } from './settings/schema';
 
@@ -97,12 +93,14 @@ export function setUpAgent(
   const provider = new OllamaAgent({
     // Only loopback: the conversation stays on this PC.
     baseUrl: ollamaBaseUrl(settings),
-    model: settings.ollamaModel || OLLAMA_DEFAULT_MODEL,
+    model: settings.ollamaModel || defaultModel(),
     registry,
     runner,
     storeDir: join(userData, 'ollama'),
+    // Installed but not running (its tray app was closed): start it, like opening it from the Start menu.
+    ensureRunning: async () => startOllama() && (await waitForOllama(ollamaBaseUrl(settings))),
     texts: {
-      notRunning: (model) => t('ollama.notRunning', { model }),
+      notRunning: (model) => (ollamaAppPath() ? t('ollama.notStarted') : t('ollama.notRunning', { model })),
       notPulled: (model) => t('ollama.notPulled', { model }),
       noTools: (model) => t('ollama.noTools', { model }),
       said: (text) => t('ollama.said', { text }),

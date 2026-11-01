@@ -2,7 +2,15 @@
 // downloading it (through Ollama). Main owns this state; the settings window only shows it.
 import { totalmem } from 'node:os';
 import { shell } from 'electron';
-import { hasModel, ollamaStatus, pullModel, recommendedModel } from '../integrations/ollama/ollama-setup';
+import {
+  hasModel,
+  ollamaAppPath,
+  ollamaStatus,
+  pullModel,
+  recommendedModel,
+  startOllama,
+  waitForOllama,
+} from '../integrations/ollama/ollama-setup';
 import type { SetupModel, SetupView } from '../shared/settings-view';
 
 /** Where people get Ollama: its official download page, opened in the user's browser. */
@@ -32,6 +40,7 @@ export class SetupAssistant {
   view(): SetupView {
     return {
       ollama: this.ollama,
+      installed: this.ollama || ollamaAppPath() !== undefined,
       modelReady: hasModel(this.models, this.opts.model()),
       recommended: this.recommended,
       ramGb: Math.round(totalmem() / 1024 ** 3),
@@ -49,6 +58,14 @@ export class SetupAssistant {
     this.ollama = status.running;
     this.models = status.models;
     this.opts.onChange();
+  }
+
+  /** Installed but not running: start it (as from the Start menu) and wait until it answers. */
+  async start(): Promise<void> {
+    if (this.ollama || !startOllama()) return;
+    this.opts.onChange();
+    await waitForOllama(this.opts.baseUrl);
+    await this.check();
   }
 
   getOllama(): void {

@@ -36,7 +36,18 @@ function Setup({ setup }: { setup: SetupView }) {
       <p className="help">{t('setup.intro')}</p>
 
       <h3>{setup.ollama ? t('setup.step1Done') : t('setup.step1')}</h3>
-      {!setup.ollama && (
+      {!setup.ollama && setup.installed && (
+        <>
+          <p className="help">{t('setup.notStarted')}</p>
+          <div className="row">
+            <button className="primary" onClick={() => send({ type: 'setup_start_ollama' })}>
+              {t('setup.startOllama')}
+            </button>
+            <button onClick={() => send({ type: 'setup_check' })}>{t('setup.checkAgain')}</button>
+          </div>
+        </>
+      )}
+      {!setup.ollama && !setup.installed && (
         <div className="row">
           <button className="primary" onClick={() => send({ type: 'setup_get_ollama' })}>
             {t('setup.getOllama')}

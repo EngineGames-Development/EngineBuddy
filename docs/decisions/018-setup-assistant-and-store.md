@@ -38,3 +38,15 @@
 - With the configured model already installed, Settings shows no setup section (as intended).
 - Not verified yet: the Store workflow on GitHub (run it by hand once), the assistant's download
   flow end to end in the UI (covered by unit tests with a fake Ollama).
+
+## Follow-up: "Ollama isn't installed" and slowness (user report)
+
+- The chat said Ollama wasn't reachable although it was installed: it had been closed (or was busy).
+  Now EngineBuddy tells "not installed" from "installed but not running", starts the installed
+  Ollama by itself (its tray app, fixed path, no arguments) at app start and when a request fails,
+  and offers a "Start Ollama" button. The status check waits 10 s instead of 3.
+- Slowness, measured on the user's PC (Ryzen 3 3200G, no GPU, 14 GB RAM, 1 GB free): loading the
+  model took 133 s (qwen3:8b) and 208 s (qwen3.5:4b) because Windows had to swap; once loaded, a
+  short answer took 1.4 s. So EngineBuddy now preloads the model at start (while the avatar
+  greets you) and asks Ollama to keep it for 30 min (`keep_alive`), and without a model in
+  Settings it uses the one recommended for the RAM (qwen3:4b below 16 GB).

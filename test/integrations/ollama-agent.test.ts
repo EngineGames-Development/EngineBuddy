@@ -218,6 +218,26 @@ describe('OllamaAgent', () => {
     expect(agent.conversationId()).toBe(first);
   });
 
+  it('starts Ollama when it is installed but not running, then answers', async () => {
+    let started = false;
+    const fetchFn = (async () => {
+      if (!started) throw new TypeError('fetch failed');
+      return new Response(JSON.stringify(say('Da bin ich.', true)) + '\n');
+    }) as unknown as typeof fetch;
+    const agent = new OllamaAgent({
+      baseUrl: 'http://127.0.0.1:11434',
+      model: 'qwen3:8b',
+      registry: new ToolRegistry([]),
+      runner: {} as ToolRunner,
+      systemPrompt: () => '',
+      fetch: fetchFn,
+      ensureRunning: async () => (started = true),
+    });
+    const events = await run(agent, 'hallo');
+    expect(started).toBe(true);
+    expect(events.filter((e) => e.type === 'message_delta').map((e) => e.text)).toEqual(['Da bin ich.']);
+  });
+
   it('only talks to Ollama on this PC', () => {
     expect(isLoopbackUrl('http://127.0.0.1:11434')).toBe(true);
     expect(isLoopbackUrl('http://localhost:11434')).toBe(true);

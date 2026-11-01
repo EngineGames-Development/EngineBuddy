@@ -82,3 +82,15 @@ describe('setup assistant: Ollama', () => {
     );
   });
 });
+
+describe('setup assistant: finding Ollama', () => {
+  it('finds the installed tray app in the usual place', async () => {
+    const { ollamaAppPath } = await import('../../src/integrations/ollama/ollama-setup');
+    const env = { LOCALAPPDATA: 'C:\\Users\\me\\AppData\\Local' };
+    expect(ollamaAppPath(env, (p) => p.endsWith('ollama app.exe'))).toMatch(
+      /Programs[\\/]Ollama[\\/]ollama app\.exe$/,
+    );
+    expect(ollamaAppPath(env, () => false)).toBeUndefined();
+    expect(ollamaAppPath({}, () => true)).toBeUndefined();
+  });
+});

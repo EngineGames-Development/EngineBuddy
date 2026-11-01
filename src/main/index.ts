@@ -10,7 +10,7 @@ import { resolveLang, translator } from '../shared/i18n';
 import type { SettingsView } from '../shared/settings-view';
 import { MemoryStore } from '../tools/memory/memory';
 import { ollamaBaseUrl, setUpAgent } from './agent-setup';
-import { OLLAMA_DEFAULT_MODEL } from '../integrations/ollama/ollama-agent';
+import { defaultModel } from '../integrations/ollama/ollama-setup';
 import { SetupAssistant } from './setup-assistant';
 import { showContextMenu } from './context-menu';
 import { ConversationStore } from './history/conversation-store';
@@ -94,14 +94,20 @@ if (!app.requestSingleInstanceLock()) {
       // spike 0b). Loading the SDK and spawning the process earlier delayed the window by seconds.
       // It continues the conversation you had open last time.
       const last = history.active.agentSessionId;
-      const start =
-        last && provider.switchConversation ? provider.switchConversation(last) : provider.prewarm?.();
-      start?.catch((error: unknown) => console.warn('[main] prewarm failed:', error));
+      const resume =
+        last && provider.switchConversation ? provider.switchConversation(last) : Promise.resolve();
+      resume
+        .then(() => provider.prewarm?.())
+        .catch((error: unknown) => console.warn('[main] prewarm failed:', error));
       // Not set up yet (no Ollama, or no model): open the assistant instead of failing on the first question.
       if (settings.get().agent === 'ollama')
-        void setupAssistant.check().then(() => {
-          if (!setupAssistant.ready) settingsWindow.open();
-        });
+        void setupAssistant
+          .check()
+          // Installed but closed: start it, so EngineBuddy just works.
+          .then(() => (setupAssistant.view().ollama ? undefined : setupAssistant.start()))
+          .then(() => {
+            if (!setupAssistant.ready) settingsWindow.open();
+          });
     });
 
     // Chat and settings: ordinary windows, opened from the menu, the tray or the bubble.
@@ -138,11 +144,11 @@ if (!app.requestSingleInstanceLock()) {
     // First-run assistant (Settings → Setup): Ollama and the model, so EngineBuddy works right away.
     const setupAssistant = new SetupAssistant({
       baseUrl: ollamaBaseUrl(settings.get()),
-      model: () => settings.get().ollamaModel || OLLAMA_DEFAULT_MODEL,
+      model: () => settings.get().ollamaModel || defaultModel(),
       onModelReady: (model) => {
         const before = settings.get();
         settings.update({ agent: 'ollama', ollamaModel: model });
-        if (before.agent !== 'ollama' || (before.ollamaModel || OLLAMA_DEFAULT_MODEL) !== model)
+        if (before.agent !== 'ollama' || (before.ollamaModel || defaultModel()) !== model)
           restartNeeded = true;
       },
       onChange: () => pushSettings(),
@@ -293,6 +299,9 @@ if (!app.requestSingleInstanceLock()) {
           break;
         case 'setup_get_ollama':
           setupAssistant.getOllama();
+          break;
+        case 'setup_start_ollama':
+          await setupAssistant.start();
           break;
         case 'setup_pull':
           void setupAssistant.pull(command.model);

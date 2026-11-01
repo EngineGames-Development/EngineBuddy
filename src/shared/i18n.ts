@@ -84,6 +84,8 @@ const en = {
   'setup.step1': '1. Install Ollama (free, from ollama.com)',
   'setup.step1Done': '1. Ollama is running ✓',
   'setup.getOllama': 'Download Ollama',
+  'setup.notStarted': 'Ollama is installed but not running right now.',
+  'setup.startOllama': 'Start Ollama',
   'setup.checkAgain': 'I installed it, check again',
   'setup.step2': '2. Download the AI model',
   'setup.recommend': 'Recommended for your PC ({ram} GB RAM): {model}. One-time download, a few GB.',
@@ -126,6 +128,8 @@ const en = {
   'ollama.notRunning':
     "I can't reach Ollama. Is it installed and running? (ollama.com, then `ollama pull {model}`.)",
   'ollama.notPulled': "The model {model} isn't downloaded yet. Run `ollama pull {model}` in a terminal.",
+  'ollama.notStarted':
+    "Ollama is installed but didn't start. Open it from the Start menu (Ollama), then ask again.",
   'ollama.noTools': "{model} can't use tools. Pick one that can in Settings, e.g. qwen3:8b or llama3.1:8b.",
   'ollama.said': 'Ollama said: {text}',
   'ollama.stopHere': "I'll stop here; that was a lot of steps. Want me to keep going?",
@@ -195,6 +199,8 @@ const de: Dictionary = {
   'setup.step1': '1. Ollama installieren (kostenlos, von ollama.com)',
   'setup.step1Done': '1. Ollama läuft ✓',
   'setup.getOllama': 'Ollama herunterladen',
+  'setup.notStarted': 'Ollama ist installiert, läuft gerade aber nicht.',
+  'setup.startOllama': 'Ollama starten',
   'setup.checkAgain': 'Installiert, nochmal prüfen',
   'setup.step2': '2. KI-Modell herunterladen',
   'setup.recommend': 'Empfohlen für deinen PC ({ram} GB RAM): {model}. Einmaliger Download, ein paar GB.',
@@ -236,6 +242,8 @@ const de: Dictionary = {
   'settings.modeMock': 'Übungsskript (keine KI, zum Ausprobieren der Fenster)',
   'ollama.notRunning':
     'Ich erreiche Ollama nicht. Ist es installiert und gestartet? (ollama.com, dann `ollama pull {model}`.)',
+  'ollama.notStarted':
+    'Ollama ist installiert, ist aber nicht gestartet. Öffne es über das Startmenü (Ollama) und frag dann nochmal.',
   'ollama.notPulled':
     'Das Modell {model} ist noch nicht heruntergeladen. Führ `ollama pull {model}` im Terminal aus.',
   'ollama.noTools':
@@ -305,6 +313,8 @@ const fr: Dictionary = {
   'setup.step1': '1. Installer Ollama (gratuit, sur ollama.com)',
   'setup.step1Done': '1. Ollama fonctionne ✓',
   'setup.getOllama': 'Télécharger Ollama',
+  'setup.notStarted': 'Ollama est installé mais ne tourne pas en ce moment.',
+  'setup.startOllama': 'Lancer Ollama',
   'setup.checkAgain': "C'est installé, vérifier",
   'setup.step2': "2. Télécharger le modèle d'IA",
   'setup.recommend':
@@ -347,6 +357,8 @@ const fr: Dictionary = {
   'settings.modeMock': "Script d'entraînement (sans IA, pour essayer les fenêtres)",
   'ollama.notRunning':
     "Je n'arrive pas à joindre Ollama. Est-il installé et lancé ? (ollama.com, puis `ollama pull {model}`.)",
+  'ollama.notStarted':
+    "Ollama est installé mais n'a pas démarré. Ouvre-le depuis le menu Démarrer (Ollama), puis redemande.",
   'ollama.notPulled':
     "Le modèle {model} n'est pas encore téléchargé. Lance `ollama pull {model}` dans un terminal.",
   'ollama.noTools':
@@ -415,6 +427,8 @@ const es: Dictionary = {
   'setup.step1': '1. Instalar Ollama (gratis, desde ollama.com)',
   'setup.step1Done': '1. Ollama está funcionando ✓',
   'setup.getOllama': 'Descargar Ollama',
+  'setup.notStarted': 'Ollama está instalado, pero ahora no está en marcha.',
+  'setup.startOllama': 'Iniciar Ollama',
   'setup.checkAgain': 'Ya lo instalé, comprobar',
   'setup.step2': '2. Descargar el modelo de IA',
   'setup.recommend': 'Recomendado para tu PC ({ram} GB de RAM): {model}. Una sola descarga, unos pocos GB.',
@@ -455,6 +469,8 @@ const es: Dictionary = {
   'settings.modeMock': 'Guion de práctica (sin IA, para probar las ventanas)',
   'ollama.notRunning':
     'No consigo conectar con Ollama. ¿Está instalado y en marcha? (ollama.com, luego `ollama pull {model}`.)',
+  'ollama.notStarted':
+    'Ollama está instalado pero no se inició. Ábrelo desde el menú Inicio (Ollama) y vuelve a preguntar.',
   'ollama.notPulled':
     'El modelo {model} aún no está descargado. Ejecuta `ollama pull {model}` en una terminal.',
   'ollama.noTools':
