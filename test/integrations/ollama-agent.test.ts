@@ -204,6 +204,20 @@ describe('OllamaAgent', () => {
     expect(textToolCalls('Hello', ours)).toEqual([]);
   });
 
+  it('a chat switch mid-turn leaves the new chat alone', async () => {
+    const { agent } = setup([[say('first', true)], [say('slow ', false), say('reply', true)]]);
+    await run(agent, 'one');
+    const first = agent.conversationId()!;
+    const turn = agent.startTurn({ text: 'two', source: 'chat' }, { turnId: 't2', mode: 'companion' });
+    const it = turn[Symbol.asyncIterator]();
+    await it.next(); // thinking
+    await agent.switchConversation(undefined);
+    while (!(await it.next()).done);
+    expect(agent.conversationId()).toBeUndefined();
+    await agent.switchConversation(first);
+    expect(agent.conversationId()).toBe(first);
+  });
+
   it('only talks to Ollama on this PC', () => {
     expect(isLoopbackUrl('http://127.0.0.1:11434')).toBe(true);
     expect(isLoopbackUrl('http://localhost:11434')).toBe(true);

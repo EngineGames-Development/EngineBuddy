@@ -54,6 +54,9 @@ scope: an attacker who already runs code as you.
 | F12 | Info | `npm audit` (dev only): 26 moderate findings, all one minimatch ReDoS (GHSA-g3hv-75wg-m249) in build tools (electron-builder). Runtime dependencies: 0. | Not shipped in the app, and only fed our own build patterns. Recheck when electron-builder updates (rechecked for 0.3.0: unchanged, runtime still 0) | Accepted |
 | F13 | Medium | With internet access, a web page Claude reads could make it `remember` a link or a rule override, which would come back in every later session. | `remember` refuses notes with links or rule-override words (ignore/disregard/override, ignorier…/missacht…); test added | Fixed |
 | F14 | Medium | WebFetch to a public name that resolves to a private IP (`127.0.0.1.nip.io`) would reach your own machine or network. | Known wildcard-DNS services are refused like private hosts; test added. Any other attacker-owned name stays possible (R13) | Fixed (partly, see R13) |
+| F15 | Low | OllamaAgent: switching chats while a reply was running let the old turn trim and save the newly opened conversation. | The turn only saves the conversation it started in; test added | Fixed |
+| F16 | Low | Web tools left redirect and error responses unread (open connections) and could drop a multi-byte character cut at the size limit; page titles kept raw HTML entities. | Bodies are cancelled, the decoder is flushed, titles go through `htmlToText` | Fixed |
+| F17 | Info | The Release workflow never succeeded (v0.1.0–v0.4.0): electron-builder tries to publish by itself on a tag and fails without a token. No release builds were ever published. | `npm run dist -- --publish never`; the workflow's own step creates the release | Fixed (untested until the next tag) |
 
 ## Accepted residual risks
 
@@ -89,6 +92,11 @@ scope: an attacker who already runs code as you.
   only, size-capped; Wikipedia via its API with a descriptive User-Agent (no scraping).
 - **Licensing:** every bundled production dependency is MIT/ISC/BSD/Apache (scanned from
   package-lock.json); THIRD-PARTY-NOTICES.md lists them. Model licenses are the user's download.
+- Review pass after the release: F15–F17 fixed; `read_file`/`list_files` got their own tests
+  (outside/`..`/`.env`/stream/`.git`/SSH key refused, binary refused, `.git` not listed). Live
+  against the real internet: a Wikipedia search returned German summaries, nodejs.org was read,
+  `localtest.me` (resolves to 127.0.0.1) was refused. 293 tests pass; `npm audit --omit=dev`: 0.
+- Old tags v0.1.0–v0.3.0 (which pointed at the Claude Code versions) were deleted from GitHub.
 - Live test (2026-11-01, built app, the user's Ollama 0.40.13): without the configured model the
   chat explains `ollama pull`; with `qwen2.5-coder:1.5b` replies stream and conversations are
   stored, but that model doesn't call tools reliably (also seen calling Ollama directly), so the

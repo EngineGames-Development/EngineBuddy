@@ -113,6 +113,7 @@ export class OllamaAgent implements AgentProvider {
     const abort = new AbortController();
     this.abort = abort;
     this.conversation ??= `ollama-${Date.now().toString(36)}`;
+    const conversation = this.conversation;
     if (this.messages.length === 0) this.messages.push({ role: 'system', content: this.opts.systemPrompt() });
     this.messages.push({
       role: 'user',
@@ -163,8 +164,11 @@ export class OllamaAgent implements AgentProvider {
       if (abort.signal.aborted) return;
       yield { type: 'agent_error', message: this.explain(error), recoverable: true };
     } finally {
-      this.trim();
-      this.save();
+      // After a switch to another chat mid-turn, this turn's history isn't the current one anymore.
+      if (this.conversation === conversation) {
+        this.trim();
+        this.save();
+      }
       if (this.abort === abort) this.abort = undefined;
     }
   }

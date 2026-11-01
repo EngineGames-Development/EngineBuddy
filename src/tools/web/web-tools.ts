@@ -76,6 +76,8 @@ export function createWebTools(opts: WebToolOptions): ToolDef[] {
       });
       const next = res.status >= 300 && res.status < 400 ? res.headers.get('location') : null;
       if (!next) return { url, res };
+      // Done with this hop: free its connection before the next one.
+      await res.body?.cancel().catch(() => undefined);
       url = new URL(next, url).href;
     }
     throw new Refused('That page redirected too many times.');
@@ -97,9 +99,14 @@ export function createWebTools(opts: WebToolOptions): ToolDef[] {
     async execute({ url }, signal) {
       try {
         const { url: finalUrl, res } = await getPublic(url, signal);
-        if (!res.ok) return { ok: false, summary: `${hostOf(finalUrl)} answered ${res.status}` };
         const type = res.headers.get('content-type') ?? '';
-        if (!/text\/|json|xml/.test(type)) return { ok: false, summary: "That isn't a text page" };
+        if (!res.ok || !/text\/|json|xml/.test(type)) {
+          await res.body?.cancel().catch(() => undefined);
+          return {
+            ok: false,
+            summary: res.ok ? "That isn't a text page" : `${hostOf(finalUrl)} answered ${res.status}`,
+          };
+        }
         const raw = await readCapped(res, MAX_DOWNLOAD);
         const text = /html/.test(type) ? htmlToText(raw) : raw;
         return {
@@ -107,7 +114,7 @@ export function createWebTools(opts: WebToolOptions): ToolDef[] {
           summary: `Read ${hostOf(finalUrl)}`,
           data: {
             url: finalUrl,
-            title: /<title[^>]*>([^<]*)<\/title>/i.exec(raw)?.[1]?.trim(),
+            title: htmlToText(/<title[^>]*>([^<]*)<\/title>/i.exec(raw)?.[1] ?? '') || undefined,
             text: text.slice(0, MAX_TEXT),
             ...(text.length > MAX_TEXT ? { truncated: true } : {}),
           },
@@ -196,7 +203,7 @@ async function readCapped(res: Response, max: number): Promise<string> {
     text += decoder.decode(chunk, { stream: true });
     if (size >= max) break;
   }
-  return text;
+  return text + decoder.decode();
 }
 
 const ENTITIES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };
