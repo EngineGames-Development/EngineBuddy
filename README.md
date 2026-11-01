@@ -121,5 +121,4 @@ Details: [SECURITY.md](SECURITY.md) (the permission model) and
 
 ## License
 
-No license has been chosen yet, so all rights are reserved by the author. If you want others to
-use or contribute, add a `LICENSE` file (for example MIT).
+[MIT](LICENSE) © 2026 EngineGames-Development

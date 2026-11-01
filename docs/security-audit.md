@@ -47,7 +47,7 @@ scope: an attacker who already runs code as you.
 | F4 | Medium | Approved commands inherited EngineBuddy's whole environment, including any `ANTHROPIC_API_KEY`: an approved command could print it into the conversation, or run `claude` billed per request. | `run_command` gets the subscription-only environment; `ELECTRON_RUN_AS_NODE` removed; test added | Fixed |
 | F5 | Medium | Electron fuses not set (SECURITY.md §7): a packaged build would honour `ELECTRON_RUN_AS_NODE`, `NODE_OPTIONS` and `--inspect`, letting anyone who can start it run arbitrary Node code as the app. | Fuses set in `electron-builder.yml`; verified on the built exe with `@electron/fuses read` (RunAsNode, NODE_OPTIONS, CLI inspect off; asar integrity + only-load-from-asar on) | Fixed (decision 014) |
 | F7 | Low | Recorded transcripts in the repo contain local paths (app install ID, session folder names), CPU model and RAM size. | Paths and CPU name replaced with placeholders in `test/fixtures`; `spikes/` removed | Fixed (decision 014) |
-| F8 | Info | Every commit's author email (`LeanderGamer2@web.de`) becomes public on push. | Documented in README; your call whether to rewrite or use GitHub's no-reply address | Your decision |
+| F8 | Info | Every commit's author email (`LeanderGamer2@web.de`) becomes public on push. | History rewritten to EngineGames-Development@web.de (your choice) before the first push | Resolved |
 
 ## Accepted residual risks
 

@@ -34,7 +34,7 @@ Date: 2026-11-01
 7. **Repo cleaned for publishing** (audit F7): local paths and the CPU name in the recorded
    transcripts are placeholders now; `spikes/` is removed as PHASE-1.md planned (results stay in
    decisions 001 and 002).
-8. **No license chosen**: `"license": "UNLICENSED"` and a README note. That's your decision.
+8. **MIT license** (your choice), in `LICENSE`.
 
 ## Verified
 
@@ -43,7 +43,7 @@ Date: 2026-11-01
 - The packaged app (fuses on) started, greeted, and answered a real Claude question.
 - `npm run check` passes with the scrubbed fixtures.
 - A scan of every tracked file finds no personal paths, names or e-mail addresses. Commit
-  metadata still contains your author e-mail (audit F8).
+  metadata uses EngineGames-Development@web.de (audit F8, rewritten before the first push).
 
 ## Before you push
 
