@@ -1,6 +1,7 @@
 import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { AVATAR_BOX, AVATAR_OFFSET, WINDOW_BASE } from '../../shared/layout';
+import { Avatar } from './Avatar';
 import { installWindowInteraction } from './window-interaction';
 
 /** Main sizes the window to WINDOW_BASE × scale, so the scale is just our width over the base. */
@@ -28,10 +29,7 @@ function AvatarApp() {
         className="avatar-box"
         style={{ left: AVATAR_OFFSET.x, top: AVATAR_OFFSET.y, width: AVATAR_BOX, height: AVATAR_BOX }}
       >
-        {/* Step 3 placeholder. The real character (SVG rig) arrives in Step 4. */}
-        <div className="placeholder" data-hit data-drag title="EngineBuddy">
-          •‿•
-        </div>
+        <Avatar />
       </div>
     </div>
   );
