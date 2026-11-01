@@ -9,10 +9,15 @@ export type RendererWindow = 'avatar';
 const devServerUrl = process.env['ELECTRON_RENDERER_URL'];
 const builtRendererDir = join(__dirname, '../renderer');
 
-export function loadRenderer(win: BrowserWindow, name: RendererWindow): Promise<void> {
+/** Load a renderer page. `query` passes read-only startup settings to the page. */
+export function loadRenderer(
+  win: BrowserWindow,
+  name: RendererWindow,
+  query: Record<string, string> = {},
+): Promise<void> {
   return devServerUrl
-    ? win.loadURL(`${devServerUrl}/${name}/index.html`)
-    : win.loadFile(join(builtRendererDir, name, 'index.html'));
+    ? win.loadURL(`${devServerUrl}/${name}/index.html?${new URLSearchParams(query)}`)
+    : win.loadFile(join(builtRendererDir, name, 'index.html'), { query });
 }
 
 // Dev only: a renderer's warnings and errors (CSP violations, React errors) are otherwise

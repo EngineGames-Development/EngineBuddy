@@ -3,13 +3,23 @@ import { parseSettings } from './schema';
 
 describe('parseSettings', () => {
   it('gives defaults for a missing or garbage file', () => {
-    expect(parseSettings(undefined)).toEqual({ scale: 1, positions: {}, lastDisplayId: undefined });
+    expect(parseSettings(undefined)).toEqual({
+      scale: 1,
+      positions: {},
+      lastDisplayId: undefined,
+      bubbleDismissSeconds: 12,
+    });
     expect(parseSettings('nope')).toEqual(parseSettings({}));
   });
 
   it('keeps good values', () => {
-    const s = parseSettings({ scale: 1.25, positions: { '7': { x: 10, y: 20 } }, lastDisplayId: '7' });
-    expect(s).toEqual({ scale: 1.25, positions: { '7': { x: 10, y: 20 } }, lastDisplayId: '7' });
+    const good = {
+      scale: 1.25,
+      positions: { '7': { x: 10, y: 20 } },
+      lastDisplayId: '7',
+      bubbleDismissSeconds: 30,
+    };
+    expect(parseSettings(good)).toEqual(good);
   });
 
   it('resets only the bad field', () => {

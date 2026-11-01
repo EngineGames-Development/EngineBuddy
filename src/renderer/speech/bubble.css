@@ -1,0 +1,233 @@
+/* The speech bubble. Sizes are base DIPs (the whole stage is scaled). */
+.bubble {
+  position: absolute;
+  box-sizing: border-box;
+  width: max-content;
+  min-width: 200px;
+  max-width: 300px;
+  max-height: 240px;
+  display: flex;
+  flex-direction: column;
+  padding: 10px 12px 8px;
+  border-radius: 14px;
+  background: rgb(20 17 29 / 95%);
+  border: 1px solid rgb(167 139 250 / 45%);
+  box-shadow:
+    0 6px 22px rgb(0 0 0 / 40%),
+    0 0 18px rgb(139 92 246 / 18%);
+  color: #ece9f5;
+  font:
+    13px/1.45 'Segoe UI Variable Text',
+    'Segoe UI',
+    system-ui,
+    sans-serif;
+  user-select: text;
+
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(6px) scale(0.96);
+  transition:
+    opacity 140ms ease-in,
+    transform 140ms ease-in,
+    visibility 0s linear 140ms;
+}
+
+.bubble.above {
+  transform-origin: 50% 100%;
+}
+
+.bubble.below {
+  transform-origin: 50% 0;
+  transform: translateY(-6px) scale(0.96);
+}
+
+.bubble.open {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition:
+    opacity 180ms ease-out,
+    transform 220ms cubic-bezier(0.2, 1.4, 0.4, 1),
+    visibility 0s;
+}
+
+.bubble-body {
+  overflow-y: auto;
+  min-height: 0;
+  margin-bottom: 6px;
+  padding-right: 2px;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(167 139 250 / 40%) transparent;
+}
+
+.prompt {
+  color: #a59cc0;
+  font-size: 12px;
+  margin-bottom: 6px;
+  overflow-wrap: anywhere;
+}
+
+.prompt::before {
+  content: '› ';
+  color: #a78bfa;
+}
+
+.narration {
+  color: #c4b5fd;
+  font-style: italic;
+  margin-bottom: 4px;
+}
+
+.activities {
+  list-style: none;
+  margin: 2px 0 6px;
+  padding: 0;
+  font-size: 12px;
+}
+
+.activities li {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  color: #d6d0ea;
+}
+
+.activities .icon {
+  width: 12px;
+  text-align: center;
+}
+
+.activities .running .icon {
+  color: #a78bfa;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+.activities .done .icon {
+  color: #6ee7b7;
+}
+
+.activities .failed .icon {
+  color: #fca5a5;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.reply {
+  overflow-wrap: anywhere;
+}
+
+.reply p,
+.reply ul,
+.reply ol,
+.reply pre {
+  margin: 0 0 6px;
+}
+
+.reply > :last-child {
+  margin-bottom: 0;
+}
+
+.reply ul,
+.reply ol {
+  padding-left: 18px;
+}
+
+.reply code {
+  font:
+    12px/1.4 'Cascadia Code',
+    Consolas,
+    monospace;
+  background: rgb(167 139 250 / 14%);
+  border-radius: 4px;
+  padding: 0 3px;
+}
+
+.reply pre {
+  background: rgb(0 0 0 / 35%);
+  border-radius: 6px;
+  padding: 6px 8px;
+  overflow-x: auto;
+}
+
+.reply pre code {
+  background: none;
+  padding: 0;
+}
+
+.typing {
+  width: 28px;
+  height: 8px;
+  background: radial-gradient(circle, #c4b5fd 2.5px, transparent 3px) 0 50% / 9px 8px repeat-x;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+.error {
+  color: #fca5a5;
+}
+
+.ask {
+  display: flex;
+  gap: 6px;
+  flex: none;
+}
+
+.ask input {
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  height: 28px;
+  padding: 0 9px;
+  border-radius: 8px;
+  border: 1px solid rgb(167 139 250 / 35%);
+  background: rgb(255 255 255 / 5%);
+  color: inherit;
+  font: inherit;
+  outline: none;
+}
+
+.ask input:focus {
+  border-color: #a78bfa;
+  background: rgb(255 255 255 / 8%);
+}
+
+.ask input::placeholder {
+  color: #8b84a3;
+}
+
+.ask .stop {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid rgb(248 113 113 / 45%);
+  background: rgb(248 113 113 / 12%);
+  color: #fca5a5;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.tail {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
+  background: rgb(20 17 29);
+  border: 1px solid rgb(167 139 250 / 45%);
+  transform: rotate(45deg);
+}
+
+.bubble.above .tail {
+  bottom: -7px;
+  border-top: none;
+  border-left: none;
+}
+
+.bubble.below .tail {
+  top: -7px;
+  border-bottom: none;
+  border-right: none;
+}

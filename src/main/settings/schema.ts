@@ -12,6 +12,8 @@ export const settingsSchema = z.object({
   positions: z.record(z.string(), point).catch({}),
   /** The display the avatar was last on. */
   lastDisplayId: z.string().optional().catch(undefined),
+  /** How long the bubble stays after a reply (it waits while you hover or type). */
+  bubbleDismissSeconds: z.number().min(3).max(600).catch(12),
 });
 
 export type Settings = z.infer<typeof settingsSchema>;

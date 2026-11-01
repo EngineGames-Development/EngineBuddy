@@ -77,7 +77,9 @@ export class AvatarWindow {
     });
 
     forwardRendererProblems(this.win, 'avatar');
-    void loadRenderer(this.win, 'avatar');
+    void loadRenderer(this.win, 'avatar', {
+      bubbleDismissMs: String(settings.get().bubbleDismissSeconds * 1000),
+    });
   }
 
   handle(command: WindowCommand): void {
