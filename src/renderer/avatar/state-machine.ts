@@ -15,6 +15,11 @@ export interface StateRequest {
   priority: number;
   /** Minimum time on screen, in ms. Requests with a hold are reactions; without, ongoing states. */
   hold?: number;
+  /**
+   * For a reaction: what the ongoing state is from now on. A finished tool means the model is
+   * thinking again, so after HAPPY the avatar shouldn't fall back to WORKING.
+   */
+  then?: AvatarState;
 }
 
 export class AvatarStateMachine {
@@ -35,6 +40,7 @@ export class AvatarStateMachine {
       this.base = request.state;
       if (this.held && request.priority > this.held.priority) this.clearHeld();
     } else if (!this.held || request.priority >= this.held.priority) {
+      if (request.then) this.base = request.then;
       this.clearHeld();
       const timer = setTimeout(() => {
         this.held = undefined;

@@ -57,6 +57,14 @@ describe('AvatarStateMachine', () => {
     expect(m.state).toBe('IDLE');
   });
 
+  it('a reaction can set what the ongoing state is afterwards', () => {
+    const { m } = machine();
+    m.apply({ state: 'WORKING', priority: 3 });
+    m.apply({ state: 'HAPPY', priority: 4, hold: 1500, then: 'THINKING' });
+    vi.advanceTimersByTime(1500);
+    expect(m.state).toBe('THINKING');
+  });
+
   it('lets a higher-priority ongoing state cut a hold short', () => {
     const { m } = machine();
     m.apply({ state: 'HAPPY', priority: 4, hold: 1500 });

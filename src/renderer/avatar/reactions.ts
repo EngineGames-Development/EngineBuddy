@@ -19,8 +19,16 @@ export const REACTIONS: readonly AnyReaction[] = [
   { on: 'message_delta', state: 'TALKING', priority: 3 },
   { on: 'tool_start', where: { category: 'filesystem' }, state: 'CODING', priority: 3 },
   { on: 'tool_start', state: 'WORKING', priority: 3 },
-  { on: 'tool_result', where: { success: true }, state: 'HAPPY', priority: 4, hold: 1500 },
-  { on: 'tool_result', where: { success: false }, state: 'CONFUSED', priority: 4, hold: 2000 },
+  // After a tool, the model reads the result: back to THINKING once the reaction has shown.
+  { on: 'tool_result', where: { success: true }, state: 'HAPPY', priority: 4, hold: 1500, then: 'THINKING' },
+  {
+    on: 'tool_result',
+    where: { success: false },
+    state: 'CONFUSED',
+    priority: 4,
+    hold: 2000,
+    then: 'THINKING',
+  },
   { on: 'confirm_request', state: 'WORRIED', priority: 5 },
   { on: 'agent_error', state: 'ERROR', priority: 6, hold: 2500 },
   { on: 'turn_end', where: { outcome: 'ok' }, state: 'IDLE', priority: 1 },
@@ -37,6 +45,6 @@ export function reactionFor(event: BuddyEvent): StateRequest | undefined {
       ),
   );
   if (!row) return undefined;
-  const { state, priority, hold } = row;
-  return hold === undefined ? { state, priority } : { state, priority, hold };
+  const { state, priority, hold, then } = row;
+  return { state, priority, ...(hold === undefined ? {} : { hold }), ...(then ? { then } : {}) };
 }

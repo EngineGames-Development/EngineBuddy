@@ -182,6 +182,7 @@ export class ClaudeCodeAgent implements AgentProvider {
     try {
       for await (const m of session.query) {
         if (m.type === 'system' && m.subtype === 'init') {
+          const first = this.sessionId === undefined;
           this.sessionId = m.session_id;
           // The no-billing guarantee (SECURITY.md §10): anything but the subscription login stops here.
           if (m.apiKeySource !== 'none') {
@@ -191,7 +192,8 @@ export class ClaudeCodeAgent implements AgentProvider {
             session.abort.abort();
             break;
           }
-          console.log(`[claude-code] session ready (${m.model}, Claude Code ${m.claude_code_version})`);
+          if (first)
+            console.log(`[claude-code] session ready (${m.model}, Claude Code ${m.claude_code_version})`);
           continue;
         }
         if ('session_id' in m && m.session_id) this.sessionId = m.session_id;
