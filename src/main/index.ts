@@ -134,6 +134,7 @@ if (!app.requestSingleInstanceLock()) {
         projectRoots: s.projectRoots,
         agent: s.agent,
         claudeModel: s.claudeModel ?? '',
+        ollamaModel: s.ollamaModel,
         bubbleDismissSeconds: s.bubbleDismissSeconds,
         voice: s.voice,
         internet: s.internet,
@@ -228,6 +229,7 @@ if (!app.requestSingleInstanceLock()) {
           settings.update({
             ...(patch.agent ? { agent: patch.agent } : {}),
             ...(patch.claudeModel !== undefined ? { claudeModel: patch.claudeModel || undefined } : {}),
+            ...(patch.ollamaModel !== undefined ? { ollamaModel: patch.ollamaModel } : {}),
             ...(patch.bubbleDismissSeconds ? { bubbleDismissSeconds: patch.bubbleDismissSeconds } : {}),
             ...(patch.voice ? { voice: patch.voice } : {}),
             ...(patch.internet !== undefined ? { internet: patch.internet } : {}),
@@ -237,6 +239,7 @@ if (!app.requestSingleInstanceLock()) {
           if (
             before.agent !== after.agent ||
             before.claudeModel !== after.claudeModel ||
+            before.ollamaModel !== after.ollamaModel ||
             before.internet !== after.internet ||
             before.language !== after.language
           )

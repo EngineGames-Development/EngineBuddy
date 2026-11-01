@@ -2,6 +2,10 @@
 // only ever sees this view and sends validated patches (./commands.ts, settingsCommandSchema).
 import type { Lang, LanguagePref } from './i18n';
 
+/** The brains: Claude Code on your subscription, Ollama on your PC (free), or the practice script. */
+export const AGENTS = ['claude-code', 'ollama', 'mock'] as const;
+export type AgentKind = (typeof AGENTS)[number];
+
 export interface VoiceSettings {
   /** Read replies aloud. */
   enabled: boolean;
@@ -21,8 +25,9 @@ export interface MemoryEntry {
 
 export interface SettingsView {
   projectRoots: string[];
-  agent: 'claude-code' | 'mock';
+  agent: AgentKind;
   claudeModel: string;
+  ollamaModel: string;
   bubbleDismissSeconds: number;
   voice: VoiceSettings;
   internet: boolean;

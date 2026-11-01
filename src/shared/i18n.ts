@@ -106,10 +106,13 @@ const en = {
   'settings.sample': "Hey. That's how I sound.",
   'settings.brain': 'Brain',
   'settings.mode': 'Mode',
-  'settings.modeClaude': 'Claude Code (your claude.ai subscription)',
+  'settings.modeClaude': 'Claude (your claude.ai subscription)',
+  'settings.modeOllama': 'Ollama (free, runs on this PC)',
+  'settings.ollamaHelp':
+    'Free and offline: install Ollama from ollama.com, then run `ollama pull qwen3:8b` once in a terminal. Needs about 6 GB of disk and a decent PC; answers are simpler than with Claude, and there is no internet search.',
   'settings.modeMock': 'Practice script (no Claude, no usage)',
   'settings.model': 'Model',
-  'settings.modelPlaceholder': "Claude Code's default (e.g. sonnet, opus)",
+  'settings.modelPlaceholder': 'Default model (e.g. sonnet, opus)',
   'settings.bubble': 'Speech bubble stays for',
   'settings.memory': 'Memory',
   'settings.memoryHelp':
@@ -196,10 +199,13 @@ const de: Dictionary = {
   'settings.sample': 'Hey. So klinge ich.',
   'settings.brain': 'Gehirn',
   'settings.mode': 'Modus',
-  'settings.modeClaude': 'Claude Code (dein claude.ai-Abo)',
+  'settings.modeClaude': 'Claude (dein claude.ai-Abo)',
+  'settings.modeOllama': 'Ollama (kostenlos, läuft auf diesem PC)',
+  'settings.ollamaHelp':
+    'Kostenlos und offline: Ollama von ollama.com installieren, dann einmal `ollama pull qwen3:8b` im Terminal ausführen. Braucht etwa 6 GB Speicher und einen ordentlichen PC; die Antworten sind einfacher als mit Claude, und es gibt keine Websuche.',
   'settings.modeMock': 'Übungsskript (kein Claude, kein Verbrauch)',
   'settings.model': 'Modell',
-  'settings.modelPlaceholder': 'Standard von Claude Code (z. B. sonnet, opus)',
+  'settings.modelPlaceholder': 'Standardmodell (z. B. sonnet, opus)',
   'settings.bubble': 'Sprechblase bleibt für',
   'settings.memory': 'Gedächtnis',
   'settings.memoryHelp':
@@ -283,10 +289,13 @@ const fr: Dictionary = {
   'settings.sample': 'Salut. Voilà comment je parle.',
   'settings.brain': 'Cerveau',
   'settings.mode': 'Mode',
-  'settings.modeClaude': 'Claude Code (ton abonnement claude.ai)',
+  'settings.modeClaude': 'Claude (ton abonnement claude.ai)',
+  'settings.modeOllama': 'Ollama (gratuit, tourne sur ce PC)',
+  'settings.ollamaHelp':
+    "Gratuit et hors ligne : installe Ollama depuis ollama.com, puis lance une fois `ollama pull qwen3:8b` dans un terminal. Il faut environ 6 Go et un PC correct ; les réponses sont plus simples qu'avec Claude, et sans recherche web.",
   'settings.modeMock': "Script d'entraînement (sans Claude, sans consommation)",
   'settings.model': 'Modèle',
-  'settings.modelPlaceholder': 'Par défaut de Claude Code (ex. sonnet, opus)',
+  'settings.modelPlaceholder': 'Modèle par défaut (ex. sonnet, opus)',
   'settings.bubble': 'La bulle reste pendant',
   'settings.memory': 'Mémoire',
   'settings.memoryHelp':
@@ -369,10 +378,13 @@ const es: Dictionary = {
   'settings.sample': 'Hola. Así sueno yo.',
   'settings.brain': 'Cerebro',
   'settings.mode': 'Modo',
-  'settings.modeClaude': 'Claude Code (tu suscripción de claude.ai)',
+  'settings.modeClaude': 'Claude (tu suscripción de claude.ai)',
+  'settings.modeOllama': 'Ollama (gratis, funciona en este PC)',
+  'settings.ollamaHelp':
+    'Gratis y sin conexión: instala Ollama desde ollama.com y ejecuta una vez `ollama pull qwen3:8b` en una terminal. Necesita unos 6 GB y un PC decente; las respuestas son más simples que con Claude y no hay búsqueda web.',
   'settings.modeMock': 'Guion de práctica (sin Claude, sin consumo)',
   'settings.model': 'Modelo',
-  'settings.modelPlaceholder': 'El predeterminado de Claude Code (p. ej. sonnet, opus)',
+  'settings.modelPlaceholder': 'Modelo predeterminado (p. ej. sonnet, opus)',
   'settings.bubble': 'La burbuja se queda',
   'settings.memory': 'Memoria',
   'settings.memoryHelp':

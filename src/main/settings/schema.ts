@@ -1,6 +1,7 @@
 // Phase 1 settings live in `userData/settings.json` (docs/PHASE-1.md). The file is hand-editable,
 // so every field falls back to its default on its own: one bad value never resets the others.
 import { z } from 'zod';
+import { AGENTS } from '../../shared/settings-view';
 import { LANGUAGE_PREFS } from '../../shared/i18n';
 import { SCALE_MAX, SCALE_MIN } from '../../shared/layout';
 
@@ -16,11 +17,15 @@ export const settingsSchema = z.object({
   /** How long the bubble stays after a reply (it waits while you hover or type). */
   bubbleDismissSeconds: z.number().min(3).max(600).catch(12),
   /** Which brain: Claude Code on your subscription, or the scripted mock (no tokens). */
-  agent: z.enum(['claude-code', 'mock']).catch('claude-code'),
+  agent: z.enum(AGENTS).catch('claude-code'),
   /** Path to claude.exe. Empty: ~/.local/bin/claude.exe, then PATH. */
   claudeExecutable: z.string().optional().catch(undefined),
   /** Model alias or ID for Claude Code (e.g. "sonnet"). Empty: Claude Code's default. */
   claudeModel: z.string().optional().catch(undefined),
+  /** The free brain: a model in Ollama on this PC (integrations/ollama). */
+  ollamaModel: z.string().max(100).catch(''),
+  /** Where Ollama listens. Only loopback addresses are used; anything else falls back to the default. */
+  ollamaUrl: z.string().max(200).catch(''),
   /** Folders EngineBuddy may read freely. The first one is the agent's working folder. */
   projectRoots: z.array(z.string()).catch([]),
   /** Let Claude search the web and read public pages (security/policy/web.ts). */

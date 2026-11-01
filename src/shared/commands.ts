@@ -3,6 +3,7 @@
 // schemas before acting on it. Unknown types and unknown keys are rejected, not stripped.
 import { z } from 'zod';
 import { LANGUAGE_PREFS } from './i18n';
+import { AGENTS } from './settings-view';
 import { MAX_IMAGES, imageSchema } from './images';
 
 /** Long enough for a pasted stack trace, short enough that a runaway renderer can't flood main. */
@@ -76,7 +77,11 @@ export const settingsCommandSchema = z.discriminatedUnion('type', [
     type: z.literal('update'),
     patch: z
       .strictObject({
-        agent: z.enum(['claude-code', 'mock']),
+        agent: z.enum(AGENTS),
+        ollamaModel: z
+          .string()
+          .max(100)
+          .regex(/^[\w.:/-]*$/, 'not a model name'),
         claudeModel: z
           .string()
           .max(100)

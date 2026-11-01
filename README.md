@@ -13,17 +13,21 @@ your PC is doing, open programs and folders, and run commands, but only after yo
   reading your passwords) are refused even if you click Allow.
 - It never bills per request: it only runs on your claude.ai login, never on an API key.
 
-**Status:** Phase 1 done, plus starting programs and confirmed commands from Phase 2. Windows only
-for now. See [ROADMAP.md](ROADMAP.md).
+**Status:** 0.4.0. Windows only for now. See [ROADMAP.md](ROADMAP.md).
 
 ## Requirements
 
 - **Windows 10 or 11** (64-bit).
-- **Claude Code**, installed and logged in with your claude.ai account (Pro or Max):
-  1. Install it: <https://docs.claude.com/en/docs/claude-code/setup>
-  2. Open a terminal, run `claude`, and log in once. That's all EngineBuddy needs.
+- **A brain**, one of these (Settings → Brain):
+  - **Ollama, free and offline:** install [Ollama](https://ollama.com), then run
+    `ollama pull qwen3:8b` once in a terminal (about 5 GB). Runs on your PC, no account, nothing
+    leaves the machine. Simpler answers than Claude, no web search; needs a reasonably recent PC
+    (16 GB RAM, ideally a graphics card).
+  - **Claude, with your claude.ai subscription (Pro or Max):** install
+    [Claude Code](https://docs.claude.com/en/docs/claude-code/setup), run `claude` once and log in.
+    Best answers, web search.
 
-  Without Claude Code, EngineBuddy still starts, says so, and runs on a practice script.
+  With neither, EngineBuddy still starts and runs on a practice script.
 
 ## Install
 
@@ -99,7 +103,8 @@ Most settings are in the Settings window. They live in `%APPDATA%\enginebuddy\se
 | Setting | Default | What |
 |---|---|---|
 | `projectRoots` | `[]` | Folders it may read without asking, e.g. `["D:\\code\\myproject"]`. The first is where it works and runs commands. With none, it uses an empty folder of its own |
-| `agent` | `"claude-code"` | `"mock"` = a practice script, no Claude, no usage |
+| `agent` | `"claude-code"` | `"ollama"` = free local model, `"mock"` = practice script |
+| `ollamaModel` | `qwen3:8b` | Any Ollama model that supports tools, e.g. `llama3.1:8b` |
 | `claudeExecutable` | auto | Path to `claude.exe` if it isn't found automatically |
 | `claudeModel` | Claude Code's default | e.g. `"sonnet"` |
 | `bubbleDismissSeconds` | `12` | How long a reply stays up |
@@ -144,6 +149,25 @@ Details: [SECURITY.md](SECURITY.md) (the permission model) and
 - [docs/decisions/](docs/decisions/): one record per step (what was built, why, how it was verified)
 - [CLAUDE.md](CLAUDE.md): the rules for working on this code with Claude Code
 
+## Privacy
+
+- **Stays on your PC:** settings, memory notes, chat history (including pictures), the audit log,
+  all in `%APPDATA%\enginebuddy`. Nothing is sent to the EngineBuddy developers; there's no
+  telemetry. Delete chats in the chat window, notes in Settings, or the whole folder.
+- **Ollama mode:** nothing leaves your PC (Ollama runs locally; EngineBuddy only talks to it on
+  127.0.0.1).
+- **Claude mode:** your messages, the pictures you send, file contents Claude reads and tool
+  results go to Anthropic under your claude.ai account and Anthropic's
+  [privacy policy](https://www.anthropic.com/legal/privacy). With Internet on, web searches and
+  fetched pages go through Anthropic and the sites visited.
+- Screenshots are only taken when you click 📷, and you see them before sending. Only send
+  pictures of other people or of others' content if you're allowed to.
+
 ## License
 
-[MIT](LICENSE) © 2026 EngineGames-Development
+EngineBuddy's own code: [MIT](LICENSE) © 2026 EngineGames-Development.
+
+Third-party parts keep their own licenses, see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+In particular the Claude Agent SDK is not MIT: it's © Anthropic PBC and its use is governed by
+Anthropic's terms. EngineBuddy is an independent project, not made or endorsed by Anthropic;
+"Claude" is a trademark of Anthropic and is used here only to say which service the app talks to.

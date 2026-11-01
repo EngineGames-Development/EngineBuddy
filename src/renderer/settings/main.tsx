@@ -26,12 +26,14 @@ function useVoices(): SpeechSynthesisVoice[] {
 function Settings() {
   const [view, setView] = useState<SettingsView>();
   const [model, setModel] = useState('');
+  const [ollamaModel, setOllamaModel] = useState('');
   const voices = useVoices();
 
   useEffect(() => {
     const off = window.buddy.onSettings((v) => {
       setView(v);
       setModel(v.claudeModel);
+      setOllamaModel(v.ollamaModel);
     });
     send({ type: 'ready' });
     return off;
@@ -161,20 +163,30 @@ function Settings() {
             }
           >
             <option value="claude-code">{t('settings.modeClaude')}</option>
+            <option value="ollama">{t('settings.modeOllama')}</option>
             <option value="mock">{t('settings.modeMock')}</option>
           </select>
         </label>
-        <label>
-          {t('settings.model')}
-          <input
-            value={model}
-            placeholder={t('settings.modelPlaceholder')}
-            onChange={(e) => setModel(e.target.value)}
-            onBlur={() =>
-              model !== view.claudeModel && send({ type: 'update', patch: { claudeModel: model.trim() } })
-            }
-          />
-        </label>
+        {view.agent === 'ollama' && <p className="help">{t('settings.ollamaHelp')}</p>}
+        {view.agent !== 'mock' && (
+          <label>
+            {t('settings.model')}
+            <input
+              key={view.agent}
+              value={view.agent === 'ollama' ? ollamaModel : model}
+              placeholder={view.agent === 'ollama' ? 'qwen3:8b' : t('settings.modelPlaceholder')}
+              onChange={(e) => (view.agent === 'ollama' ? setOllamaModel : setModel)(e.target.value)}
+              onBlur={() => {
+                if (view.agent === 'ollama') {
+                  if (ollamaModel !== view.ollamaModel)
+                    send({ type: 'update', patch: { ollamaModel: ollamaModel.trim() } });
+                } else if (model !== view.claudeModel) {
+                  send({ type: 'update', patch: { claudeModel: model.trim() } });
+                }
+              }}
+            />
+          </label>
+        )}
         <label>
           {t('settings.bubble')} <span className="value">{view.bubbleDismissSeconds} s</span>
           <input

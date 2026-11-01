@@ -15,7 +15,13 @@ import { PolicyEngine } from '../security/policy/policy-engine';
 import { ToolRunner } from '../security/tool-runner';
 import { createToolRegistry } from '../tools';
 import type { MemoryStore } from '../tools/memory/memory';
-import { contextPrompt } from '../core/personality/personality';
+import { LOCAL_MODE_PROMPT, PERSONALITY_PROMPT, contextPrompt } from '../core/personality/personality';
+import {
+  OLLAMA_DEFAULT_MODEL,
+  OLLAMA_DEFAULT_URL,
+  OllamaAgent,
+  isLoopbackUrl,
+} from '../integrations/ollama/ollama-agent';
 import { LANGUAGE_NAMES, type Lang } from '../shared/i18n';
 import type { Settings } from './settings/schema';
 
@@ -75,6 +81,28 @@ export function setUpAgent(
 
   if (settings.agent === 'mock') return { provider: new MockAgent(), registry, runner };
 
+  const context = (internet: boolean) =>
+    contextPrompt({
+      now: new Date(),
+      language: LANGUAGE_NAMES[lang],
+      internet,
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    });
+
+  if (settings.agent === 'ollama') {
+    const provider = new OllamaAgent({
+      // Only loopback: the free mode keeps the conversation on this PC.
+      baseUrl:
+        settings.ollamaUrl && isLoopbackUrl(settings.ollamaUrl) ? settings.ollamaUrl : OLLAMA_DEFAULT_URL,
+      model: settings.ollamaModel || OLLAMA_DEFAULT_MODEL,
+      registry,
+      runner,
+      storeDir: join(userData, 'ollama'),
+      systemPrompt: () => PERSONALITY_PROMPT + LOCAL_MODE_PROMPT + context(false) + memory.promptSection(),
+    });
+    return { provider, registry, runner };
+  }
+
   const executable = locateClaude(settings.claudeExecutable);
   if (!executable) {
     return {
@@ -93,13 +121,7 @@ export function setUpAgent(
     runner,
     audit,
     web: settings.internet,
-    extraPrompt: () =>
-      contextPrompt({
-        now: new Date(),
-        language: LANGUAGE_NAMES[lang],
-        internet: settings.internet,
-        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      }) + memory.promptSection(),
+    extraPrompt: () => context(settings.internet) + memory.promptSection(),
     ...(settings.claudeModel ? { model: settings.claudeModel } : {}),
   });
   return { provider, registry, runner };
