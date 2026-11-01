@@ -9,7 +9,8 @@ export type TurnSource = 'bubble' | 'chat' | 'menu' | 'proactive';
 export type InputSource = 'bubble' | 'chat' | 'voice';
 export type TurnOutcome = 'ok' | 'error' | 'cancelled';
 
-export type ToolCategory = 'system' | 'filesystem' | 'terminal' | 'git' | 'apps' | 'projects' | 'memory';
+export type ToolCategory =
+  'system' | 'filesystem' | 'terminal' | 'git' | 'apps' | 'projects' | 'memory' | 'web';
 
 export type DesktopMode = 'companion' | 'focus' | 'developer' | 'silent' | 'sleep';
 

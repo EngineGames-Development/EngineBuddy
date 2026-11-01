@@ -54,7 +54,8 @@ input, after zod parsing and after path normalisation.
 | `delete_file` | CONFIRM | Moves to the Recycle Bin (`shell.trashItem`); never a hard delete |
 | `run_command`, Bash | CONFIRM | Shows the exact command line, cwd and environment changes |
 | Package installs (`npm i`, `cargo add`, `pip`, `winget`) | CONFIRM | Flagged as "installs software" |
-| WebFetch / WebSearch / browser | CONFIRM | Shows the URL |
+| WebSearch / WebFetch | SAFE while Settings → Internet is on, else BLOCKED | Public http(s) only: no local/private addresses, no logins in URLs, no data-smuggling-shaped URLs (§11) |
+| Browser automation | CONFIRM | Shows the URL |
 | `close_application` / kill process | CONFIRM | |
 | System settings (registry, services, firewall, power, autostart entries) | CONFIRM, *and* off by default behind a settings toggle | |
 | Reading credential stores, browser password/cookie DBs, keychains, `.ssh`, `.aws`, `.env*` outside project roots | **BLOCKED** | |
@@ -189,3 +190,14 @@ EngineBuddy must never cause a per-request charge (ARCHITECTURE.md §6.2, D8).
 What the app can't control: if your claude.ai account has **extra usage** (paid overage) turned on,
 going past your plan limit could be charged by Anthropic. Keep it off in your claude.ai billing settings.
 With it off, hitting the limit just pauses EngineBuddy until the limit resets.
+
+## 11. Internet access
+
+WebSearch and WebFetch are Claude Code's built-ins. They're offered to the model only when
+Settings → Internet is on (the default), and both gates still check every call
+(`src/security/policy/web.ts`). Reading the web is SAFE because nothing local changes; the risks are
+(a) your network being reached (refused: private, loopback, link-local and metadata IPs in every
+notation, local names, wildcard-DNS services) and (b) data leaving in a URL or query (secrets
+can't be read at all; URLs with logins, long opaque blobs or oversized queries are refused).
+Web content is untrusted text: anything with an effect still needs your click, and memory notes
+can't hold links or rule overrides. Residual risks: docs/security-audit.md R12–R14.

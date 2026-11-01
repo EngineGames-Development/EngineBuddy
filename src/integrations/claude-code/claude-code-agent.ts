@@ -40,7 +40,9 @@ export interface ClaudeCodeOptions {
   runner: ToolRunner;
   audit: AuditSink;
   env?: NodeJS.ProcessEnv;
-  /** Extra system-prompt text, read at the start of each session (the memory notes). */
+  /** Offer WebSearch / WebFetch (Settings → Internet). */
+  web?: boolean;
+  /** Extra system-prompt text, read at the start of each session (memory notes, date, language). */
   extraPrompt?: () => string;
   /** Injected in tests. The SDK is ESM-only, so it's loaded with a dynamic import. */
   loadSdk?: () => Promise<Sdk>;
@@ -49,6 +51,8 @@ export interface ClaudeCodeOptions {
 /** Built-ins the model can see. Bash is listed only so a request for it reaches our gates and is
  * refused visibly (and audited) instead of the model guessing it doesn't exist. */
 const BUILTIN_TOOLS = ['Read', 'Glob', 'Bash'];
+/** Added when internet access is on; PolicyEngine still checks every call (security/policy/web.ts). */
+const WEB_TOOLS = ['WebSearch', 'WebFetch'];
 
 const NOT_SUBSCRIPTION =
   "I'm not logged in the free way, so I'm not going to run. (Claude Code isn't using your claude.ai subscription login.)";
@@ -187,7 +191,7 @@ export class ClaudeCodeAgent implements AgentProvider {
       // Don't load the user's own Claude settings or claude.ai connectors (spike 0b, finding 3).
       settingSources: [],
       strictMcpConfig: true,
-      tools: BUILTIN_TOOLS,
+      tools: this.opts.web ? [...BUILTIN_TOOLS, ...WEB_TOOLS] : BUILTIN_TOOLS,
       includePartialMessages: true,
       systemPrompt: {
         type: 'preset',

@@ -2,6 +2,7 @@
 // so they are an untrusted surface (ARCHITECTURE.md §3): main parses every payload with these
 // schemas before acting on it. Unknown types and unknown keys are rejected, not stripped.
 import { z } from 'zod';
+import { LANGUAGE_PREFS } from './i18n';
 import { MAX_IMAGES, imageSchema } from './images';
 
 /** Long enough for a pasted stack trace, short enough that a runaway renderer can't flood main. */
@@ -66,6 +67,7 @@ export const voiceSettingsSchema = z.strictObject({
   enabled: z.boolean(),
   voice: z.string().max(200),
   rate: z.number().min(0.5).max(2),
+  pitch: z.number().min(0.5).max(1.5).default(1),
 });
 
 export const settingsCommandSchema = z.discriminatedUnion('type', [
@@ -81,6 +83,8 @@ export const settingsCommandSchema = z.discriminatedUnion('type', [
           .regex(/^[\w.:[\]-]*$/, 'not a model name'),
         bubbleDismissSeconds: z.number().int().min(3).max(600),
         voice: voiceSettingsSchema,
+        internet: z.boolean(),
+        language: z.enum(LANGUAGE_PREFS),
       })
       .partial(),
   }),

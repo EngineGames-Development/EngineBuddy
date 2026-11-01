@@ -40,7 +40,11 @@ export class ConversationStore {
   private readonly pending = new Map<string, PendingReply>();
   private readonly listeners = new Set<() => void>();
 
-  constructor(private readonly dir: string) {
+  constructor(
+    private readonly dir: string,
+    /** The title of a conversation before its first message names it (in the UI language). */
+    private readonly newTitle = 'New chat',
+  ) {
     mkdirSync(dir, { recursive: true });
     for (const name of readdirSync(dir)) {
       if (!name.endsWith('.json')) continue;
@@ -168,7 +172,13 @@ export class ConversationStore {
 
   private create(): Conversation {
     const now = Date.now();
-    const c: Conversation = { id: newId(), title: 'New chat', createdAt: now, updatedAt: now, messages: [] };
+    const c: Conversation = {
+      id: newId(),
+      title: this.newTitle,
+      createdAt: now,
+      updatedAt: now,
+      messages: [],
+    };
     this.conversations.set(c.id, c);
     this.activeId = c.id;
     this.prune();

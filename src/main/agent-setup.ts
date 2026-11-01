@@ -15,6 +15,8 @@ import { PolicyEngine } from '../security/policy/policy-engine';
 import { ToolRunner } from '../security/tool-runner';
 import { createToolRegistry } from '../tools';
 import type { MemoryStore } from '../tools/memory/memory';
+import { contextPrompt } from '../core/personality/personality';
+import { LANGUAGE_NAMES, type Lang } from '../shared/i18n';
 import type { Settings } from './settings/schema';
 
 export interface AgentSetup {
@@ -33,6 +35,7 @@ export function setUpAgent(
   settings: Readonly<Settings>,
   broker: ConfirmationBroker,
   memory: MemoryStore,
+  lang: Lang = 'en',
 ): AgentSetup {
   const userData = app.getPath('userData');
   const env: PathEnv = {
@@ -60,7 +63,14 @@ export function setUpAgent(
     memory,
   });
   const audit = new AuditLog(join(userData, 'logs'));
-  const policy = new PolicyEngine({ registry, secrets: new SecretPaths(env), env, projectRoots: roots, cwd });
+  const policy = new PolicyEngine({
+    registry,
+    secrets: new SecretPaths(env),
+    env,
+    projectRoots: roots,
+    cwd,
+    web: settings.internet,
+  });
   const runner = new ToolRunner(registry, policy, audit, broker);
 
   if (settings.agent === 'mock') return { provider: new MockAgent(), registry, runner };
@@ -82,7 +92,14 @@ export function setUpAgent(
     policy,
     runner,
     audit,
-    extraPrompt: () => memory.promptSection(),
+    web: settings.internet,
+    extraPrompt: () =>
+      contextPrompt({
+        now: new Date(),
+        language: LANGUAGE_NAMES[lang],
+        internet: settings.internet,
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      }) + memory.promptSection(),
     ...(settings.claudeModel ? { model: settings.claudeModel } : {}),
   });
   return { provider, registry, runner };

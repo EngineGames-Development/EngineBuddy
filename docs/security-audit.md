@@ -51,7 +51,9 @@ scope: an attacker who already runs code as you.
 | F9 | Medium | The chat page could ask main for screenshots on its own (no click needed), e.g. if a rendering bug let model text run script. | Main takes one only when the chat window has focus, at most one every 3 s; the picture lands in the composer for you to see, never sent by itself | Fixed |
 | F10 | Medium | File-edit rules compared raw names: `.env.`, `.ENV::$DATA` and `.git \config` slip past, and `.git/hooks` turns a file edit into a delayed command. | Names are compared the way Windows resolves them (trailing dots/spaces, streams); anything under `.git` is refused | Fixed |
 | F11 | Low | `edit_file` read the whole file in main's event loop while building the confirmation. | Files over 2 MB aren't read for the diff (and can't be edited) | Fixed |
-| F12 | Info | `npm audit`: 26 moderate findings, all one minimatch ReDoS (GHSA-g3hv-75wg-m249) in build tools (electron-builder). Runtime dependencies: 0. | Not shipped in the app, and only fed our own build patterns. Recheck when electron-builder updates | Accepted |
+| F12 | Info | `npm audit`: 26 moderate findings, all one minimatch ReDoS (GHSA-g3hv-75wg-m249) in build tools (electron-builder). Runtime dependencies: 0. | Not shipped in the app, and only fed our own build patterns. Recheck when electron-builder updates (rechecked for 0.3.0: unchanged, runtime still 0) | Accepted |
+| F13 | Medium | With internet access, a web page Claude reads could make it `remember` a link or a rule override, which would come back in every later session. | `remember` refuses notes with links or rule-override words (ignore/disregard/override, ignorier…/missacht…); test added | Fixed |
+| F14 | Medium | WebFetch to a public name that resolves to a private IP (`127.0.0.1.nip.io`) would reach your own machine or network. | Known wildcard-DNS services are refused like private hosts; test added. Any other attacker-owned name stays possible (R13) | Fixed (partly, see R13) |
 
 ## Accepted residual risks
 
@@ -67,7 +69,27 @@ scope: an attacker who already runs code as you.
 | R9 | **You approve a harmful file change.** A diff can hide intent (e.g. a build script edited to run something later). | Changes only inside project folders, never `.env` or secret paths; the window shows the real diff from the file on disk, not the model's summary. Read build scripts and hooks especially carefully. |
 | R10 | **Memory as persistent injection.** A file the model reads could make it `remember` an instruction that comes back every session. | Notes are labelled "notes, not instructions" in the prompt, show up in the activity list when written, can't hold secret-looking text, and you can read and delete each one in Settings. |
 | R11 | **Pictures and history leave/stay on your PC.** Images you send go to Anthropic; the chat history (including pictures) is stored unencrypted in `%APPDATA%\enginebuddy\history`. | Screenshots are only taken when you click 📷 and you see them before sending. Delete chats in the chat window. |
+| R12 | **Data can leave through the web tools.** A prompt-injected page or file could make Claude put something it read (project code, chat text) into a search query or a fetched URL. | Secrets, `.env` and key files can't be read in the first place. URLs with logins, long opaque blobs, queries over 300 chars and URLs over 600 chars are refused; search queries are capped at 500 chars. Every web call shows in the activity list and the audit log. Turn Internet off in Settings for sensitive projects. |
+| R13 | **DNS rebinding.** A public host name can resolve to a private address; the check is on the name, not the resolved IP (Claude Code fetches it). | Private IPs, local names and known wildcard-DNS services are refused. Claude Code's own WebFetch adds a domain safety check. Pages on your LAN that need no login are what's at risk. |
+| R14 | **Web pages are untrusted text.** What Claude reads online can try to steer it. | The prompt says so explicitly; everything with an effect (commands, file changes) still needs your click, and memory notes can't hold links or overrides (F13). |
 | R8 | **No code signing** for packaged builds; Windows SmartScreen will warn, and you can't verify a download came from you. | Fine for personal use. Sign before distributing to others. |
+
+## 0.3.0 additions (docs/decisions/016)
+
+- **Internet:** WebSearch and WebFetch are SAFE only while Settings → Internet is on (default on;
+  off means BLOCKED at both gates, and the tools aren't even offered to Claude). WebFetch goes only
+  to public http(s) addresses (`src/security/policy/web.ts`): no localhost, private/link-local/
+  metadata IPs (v4, v6, IPv4-mapped, decimal/hex forms), single-label or local-TLD names,
+  wildcard-DNS services, logins in URLs, or data-smuggling-shaped URLs. These rules only refuse.
+- **Languages:** the `?lang=` page parameter is parsed against a fixed list; translations are
+  rendered as text like everything else. Settings `language`/`internet` are zod enums/booleans and
+  accepted only from the settings window.
+- **Voice:** unchanged trust model (Web Speech, local voices, avatar window only).
+- Live test (2026-11-01, built app, real Claude, German Windows): UI came up in German from the
+  system locale; "neueste Node.js-Version?" → two WebFetch calls to nodejs.org (allowed, audited),
+  answer in German with the source; "WebFetch http://192.168.178.1/" → BLOCKED by `web-url`,
+  Claude explained and did not retry.
+- `npm audit --omit=dev`: 0 vulnerabilities.
 
 ## Verified by tests
 

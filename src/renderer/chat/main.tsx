@@ -9,6 +9,7 @@ import type { ChatMessage, ChatState, ImageAttachment } from '../../shared/chat'
 import { MAX_INPUT_LENGTH } from '../../shared/commands';
 import { MAX_IMAGES } from '../../shared/images';
 import { imageFromFile, imageUrl } from '../common/images';
+import { lang, t } from '../common/i18n';
 import { MarkdownView } from '../speech/MarkdownView';
 import { idle, liveReducer } from './live-turn';
 import './chat.css';
@@ -19,8 +20,8 @@ function when(at: number): string {
   const d = new Date(at);
   const today = new Date().toDateString() === d.toDateString();
   return today
-    ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    : d.toLocaleDateString([], { day: 'numeric', month: 'short' });
+    ? d.toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' })
+    : d.toLocaleDateString(lang, { day: 'numeric', month: 'short' });
 }
 
 function Message({ m }: { m: ChatMessage }) {
@@ -92,7 +93,7 @@ function Chat() {
   const attach = (images: ImageAttachment[]) =>
     setAttachments((current) => {
       const next = [...current, ...images].slice(0, MAX_IMAGES);
-      if (current.length + images.length > MAX_IMAGES) setNotice(`Up to ${MAX_IMAGES} pictures per message.`);
+      if (current.length + images.length > MAX_IMAGES) setNotice(t('chat.maxPictures', { n: MAX_IMAGES }));
       return next;
     });
 
@@ -102,13 +103,13 @@ function Chat() {
     try {
       attach(await Promise.all(pictures.map(imageFromFile)));
     } catch {
-      setNotice("Couldn't read that picture.");
+      setNotice(t('common.pictureFailed'));
     }
   };
 
   const send = (e?: FormEvent) => {
     e?.preventDefault();
-    const text = draft.trim() || (attachments.length ? 'Look at this.' : '');
+    const text = draft.trim() || (attachments.length ? t('common.lookAtThis') : '');
     if (!text) return;
     window.buddy.send({
       type: 'user_input',
@@ -141,7 +142,7 @@ function Chat() {
     >
       <aside>
         <button className="new" onClick={() => window.buddy.send({ type: 'chat_new' })}>
-          + New chat
+          {t('chat.new')}
         </button>
         <ul className="conversations">
           {state?.conversations.map((c) => (
@@ -155,10 +156,11 @@ function Chat() {
               <span className="when">{when(c.updatedAt)}</span>
               <button
                 className="delete"
-                title="Delete this chat"
+                title={t('chat.delete')}
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (confirm(`Delete "${c.title}"?`)) window.buddy.send({ type: 'chat_delete', id: c.id });
+                  if (confirm(t('chat.deleteAsk', { title: c.title })))
+                    window.buddy.send({ type: 'chat_delete', id: c.id });
                 }}
               >
                 ×
@@ -167,7 +169,7 @@ function Chat() {
           ))}
         </ul>
         <button className="settings" onClick={() => window.buddy.send({ type: 'open_settings' })}>
-          ⚙ Settings
+          {t('chat.settings')}
         </button>
       </aside>
 
@@ -182,8 +184,8 @@ function Chat() {
         >
           {state && state.messages.length === 0 && !live.busy && (
             <div className="empty">
-              <p>Hey. What are we building today?</p>
-              <p className="hint">Paste a picture with Ctrl+V, drop one here, or use 📷 for a screenshot.</p>
+              <p>{t('chat.hello')}</p>
+              <p className="hint">{t('chat.hint')}</p>
             </div>
           )}
           {state?.messages.map((m) => (
@@ -217,7 +219,7 @@ function Chat() {
                   <img src={imageUrl(img)} alt="" />
                   <button
                     type="button"
-                    title="Remove"
+                    title={t('common.remove')}
                     onClick={() => setAttachments((a) => a.filter((_, j) => j !== i))}
                   >
                     ×
@@ -230,7 +232,7 @@ function Chat() {
             <button
               type="button"
               className="icon"
-              title="Take a screenshot (this window hides for a moment)"
+              title={t('chat.screenshot')}
               onClick={() => window.buddy.send({ type: 'take_screenshot' })}
             >
               📷
@@ -240,7 +242,7 @@ function Chat() {
               value={draft}
               rows={1}
               maxLength={MAX_INPUT_LENGTH}
-              placeholder="Message EngineBuddy…  (Enter sends, Shift+Enter new line)"
+              placeholder={t('chat.placeholder')}
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) send(e);
@@ -260,20 +262,20 @@ function Chat() {
               <button
                 type="button"
                 className="stop"
-                title="Stop"
+                title={t('common.stop')}
                 onClick={() => window.buddy.send({ type: 'cancel_turn' })}
               >
                 ■
               </button>
             ) : (
               <button type="submit" className="send" disabled={!draft.trim() && !attachments.length}>
-                Send
+                {t('chat.send')}
               </button>
             )}
           </div>
         </form>
       </main>
-      {dragging && <div className="dropzone">Drop the picture to attach it</div>}
+      {dragging && <div className="dropzone">{t('chat.drop')}</div>}
     </div>
   );
 }

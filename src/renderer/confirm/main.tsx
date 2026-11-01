@@ -6,6 +6,7 @@
 import { StrictMode, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { ConfirmationRequest, DiffLine } from '../../shared/events';
+import { t } from '../common/i18n';
 import './confirm.css';
 
 interface Pending {
@@ -62,7 +63,7 @@ function Confirm({ pending }: { pending: Pending }) {
       <header>
         <span className="dot" />
         <h1>{request.title}</h1>
-        <span className="timer" title="Says no by itself when this runs out">
+        <span className="timer" title={t('confirm.timer')}>
           {left}s
         </span>
       </header>
@@ -88,13 +89,13 @@ function Confirm({ pending }: { pending: Pending }) {
 
       {request.modelExplanation && (
         <div className="explanation">
-          <span>EngineBuddy says:</span> {request.modelExplanation}
+          <span>{t('confirm.says')}</span> {request.modelExplanation}
         </div>
       )}
 
       <footer>
         <button ref={cancel} className="cancel" onClick={() => answer(false)} disabled={answered}>
-          Cancel
+          {t('confirm.cancel')}
         </button>
         <button
           className="allow"
@@ -103,7 +104,7 @@ function Confirm({ pending }: { pending: Pending }) {
           // Enter never allows (SECURITY.md §5); Space on a focused button still does.
           onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
         >
-          Allow
+          {t('confirm.allow')}
         </button>
       </footer>
     </div>
@@ -116,6 +117,6 @@ const pending = readPending();
 
 createRoot(root).render(
   <StrictMode>
-    {pending ? <Confirm pending={pending} /> : <p className="confirm">Nothing to confirm.</p>}
+    {pending ? <Confirm pending={pending} /> : <p className="confirm">{t('confirm.nothing')}</p>}
   </StrictMode>,
 );

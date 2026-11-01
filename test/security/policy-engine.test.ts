@@ -114,8 +114,8 @@ describe('PolicyEngine: built-in tools', () => {
     expect(decide('Glob', { pattern: '*', path: 'C:\\Users\\me\\.ssh' })).toBe('BLOCKED (denied)');
   });
 
-  it.each(['Bash', 'PowerShell', 'Write', 'Edit', 'NotebookEdit', 'WebFetch', 'WebSearch'])(
-    '%s needs a confirmation (denied in Phase 1)',
+  it.each(['Bash', 'PowerShell', 'Write', 'Edit', 'NotebookEdit'])(
+    '%s needs a confirmation (denied: we cannot show it)',
     (tool) => {
       expect(decide(tool, { command: 'dir C:\\' })).toBe('CONFIRM (denied)');
     },

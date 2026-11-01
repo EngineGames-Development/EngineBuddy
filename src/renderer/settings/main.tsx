@@ -5,6 +5,8 @@ import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { SettingsCommand } from '../../shared/commands';
 import type { SettingsView, VoiceSettings } from '../../shared/settings-view';
+import { LANGUAGE_NAMES, LANGUAGES, type LanguagePref } from '../../shared/i18n';
+import { t } from '../common/i18n';
 import { speak } from '../speech/voice';
 import './settings.css';
 
@@ -35,7 +37,7 @@ function Settings() {
     return off;
   }, []);
 
-  if (!view) return <p className="loading">Loading…</p>;
+  if (!view) return <p className="loading">{t('settings.loading')}</p>;
 
   const setVoice = (patch: Partial<VoiceSettings>) =>
     send({ type: 'update', patch: { voice: { ...view.voice, ...patch } } });
@@ -44,48 +46,77 @@ function Settings() {
     <div className="settings">
       {view.restartNeeded && (
         <div className="restart">
-          <span>Some changes take effect after a restart.</span>
-          <button onClick={() => send({ type: 'restart' })}>Restart now</button>
+          <span>{t('settings.restart')}</span>
+          <button onClick={() => send({ type: 'restart' })}>{t('settings.restartNow')}</button>
         </div>
       )}
 
       <section>
-        <h2>Project folders</h2>
-        <p className="help">
-          EngineBuddy may read files here without asking, and change them after you OK a diff. The first one
-          is where it works and runs commands.
-        </p>
+        <h2>{t('settings.folders')}</h2>
+        <p className="help">{t('settings.foldersHelp')}</p>
         <ul className="roots">
-          {view.projectRoots.length === 0 && (
-            <li className="none">None yet. It uses an empty folder of its own.</li>
-          )}
+          {view.projectRoots.length === 0 && <li className="none">{t('settings.noFolders')}</li>}
           {view.projectRoots.map((root, i) => (
             <li key={root}>
               <span className="path">{root}</span>
-              {i === 0 && <span className="badge">working folder</span>}
+              {i === 0 && <span className="badge">{t('settings.workingFolder')}</span>}
               <button className="remove" onClick={() => send({ type: 'remove_root', path: root })}>
-                Remove
+                {t('common.remove')}
               </button>
             </li>
           ))}
         </ul>
-        <button onClick={() => send({ type: 'add_root' })}>+ Add folder…</button>
+        <button onClick={() => send({ type: 'add_root' })}>{t('settings.addFolder')}</button>
       </section>
 
       <section>
-        <h2>Voice</h2>
+        <h2>{t('settings.language')}</h2>
+        <label>
+          <select
+            aria-label={t('settings.language')}
+            value={view.language}
+            onChange={(e) => send({ type: 'update', patch: { language: e.target.value as LanguagePref } })}
+          >
+            <option value="system">
+              {t('settings.languageSystem', { name: LANGUAGE_NAMES[view.systemLanguage] })}
+            </option>
+            {LANGUAGES.map((l) => (
+              <option key={l} value={l}>
+                {LANGUAGE_NAMES[l]}
+              </option>
+            ))}
+          </select>
+        </label>
+        <p className="help">{t('settings.languageHelp')}</p>
+      </section>
+
+      <section>
+        <h2>{t('settings.internet')}</h2>
+        <label className="check">
+          <input
+            type="checkbox"
+            checked={view.internet}
+            onChange={(e) => send({ type: 'update', patch: { internet: e.target.checked } })}
+          />
+          {t('settings.internetOn')}
+        </label>
+        <p className="help">{t('settings.internetHelp')}</p>
+      </section>
+
+      <section>
+        <h2>{t('settings.voice')}</h2>
         <label className="check">
           <input
             type="checkbox"
             checked={view.voice.enabled}
             onChange={(e) => setVoice({ enabled: e.target.checked })}
           />
-          Read replies aloud
+          {t('settings.readAloud')}
         </label>
         <label>
-          Voice
+          {t('settings.voice')}
           <select value={view.voice.voice} onChange={(e) => setVoice({ voice: e.target.value })}>
-            <option value="">System default</option>
+            <option value="">{t('settings.voiceAuto')}</option>
             {voices.map((v) => (
               <option key={v.voiceURI} value={v.name}>
                 {v.name} ({v.lang})
@@ -94,7 +125,7 @@ function Settings() {
           </select>
         </label>
         <label>
-          Speed <span className="value">{view.voice.rate.toFixed(1)}×</span>
+          {t('settings.speed')} <span className="value">{view.voice.rate.toFixed(1)}×</span>
           <input
             type="range"
             min={0.5}
@@ -104,28 +135,40 @@ function Settings() {
             onChange={(e) => setVoice({ rate: Number(e.target.value) })}
           />
         </label>
-        <button onClick={() => speak("Hey. That's how I sound.", view.voice)}>▶ Try it</button>
+        <label>
+          {t('settings.pitch')} <span className="value">{view.voice.pitch.toFixed(1)}</span>
+          <input
+            type="range"
+            min={0.5}
+            max={1.5}
+            step={0.1}
+            value={view.voice.pitch}
+            onChange={(e) => setVoice({ pitch: Number(e.target.value) })}
+          />
+        </label>
+        <p className="help">{t('settings.voiceHelp')}</p>
+        <button onClick={() => speak(t('settings.sample'), view.voice)}>{t('settings.tryIt')}</button>
       </section>
 
       <section>
-        <h2>Brain</h2>
+        <h2>{t('settings.brain')}</h2>
         <label>
-          Mode
+          {t('settings.mode')}
           <select
             value={view.agent}
             onChange={(e) =>
               send({ type: 'update', patch: { agent: e.target.value as SettingsView['agent'] } })
             }
           >
-            <option value="claude-code">Claude Code (your claude.ai subscription)</option>
-            <option value="mock">Practice script (no Claude, no usage)</option>
+            <option value="claude-code">{t('settings.modeClaude')}</option>
+            <option value="mock">{t('settings.modeMock')}</option>
           </select>
         </label>
         <label>
-          Model
+          {t('settings.model')}
           <input
             value={model}
-            placeholder="Claude Code's default (e.g. sonnet, opus)"
+            placeholder={t('settings.modelPlaceholder')}
             onChange={(e) => setModel(e.target.value)}
             onBlur={() =>
               model !== view.claudeModel && send({ type: 'update', patch: { claudeModel: model.trim() } })
@@ -133,7 +176,7 @@ function Settings() {
           />
         </label>
         <label>
-          Speech bubble stays for <span className="value">{view.bubbleDismissSeconds} s</span>
+          {t('settings.bubble')} <span className="value">{view.bubbleDismissSeconds} s</span>
           <input
             type="range"
             min={3}
@@ -147,17 +190,18 @@ function Settings() {
       </section>
 
       <section>
-        <h2>Memory</h2>
-        <p className="help">
-          Notes EngineBuddy keeps about you across restarts. It writes them itself (ask it to remember
-          something); delete anything you don't want it to know.
-        </p>
+        <h2>{t('settings.memory')}</h2>
+        <p className="help">{t('settings.memoryHelp')}</p>
         <ul className="memories">
-          {view.memories.length === 0 && <li className="none">Nothing yet.</li>}
+          {view.memories.length === 0 && <li className="none">{t('settings.nothing')}</li>}
           {view.memories.map((m) => (
             <li key={m.id}>
               <span>{m.text}</span>
-              <button className="remove" title="Forget" onClick={() => send({ type: 'forget', id: m.id })}>
+              <button
+                className="remove"
+                title={t('settings.forget')}
+                onClick={() => send({ type: 'forget', id: m.id })}
+              >
                 ×
               </button>
             </li>
@@ -166,9 +210,9 @@ function Settings() {
         {view.memories.length > 0 && (
           <button
             className="danger"
-            onClick={() => confirm('Forget everything?') && send({ type: 'forget_all' })}
+            onClick={() => confirm(t('settings.forgetAllAsk')) && send({ type: 'forget_all' })}
           >
-            Forget everything
+            {t('settings.forgetAll')}
           </button>
         )}
       </section>

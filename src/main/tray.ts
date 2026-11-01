@@ -1,4 +1,5 @@
 import { Menu, Tray, nativeImage, type NativeImage } from 'electron';
+import type { Translate } from '../shared/i18n';
 
 export interface TrayActions {
   isVisible(): boolean;
@@ -14,26 +15,26 @@ export interface TrayActions {
  * The tray icon (ARCHITECTURE.md §8.2): Show/Hide, Chat, Settings, Pause, Exit. Left-click toggles visibility.
  * The menu is rebuilt on every open, so its labels always match the current state.
  */
-export function createTray(actions: TrayActions): Tray {
+export function createTray(t: Translate, actions: TrayActions): Tray {
   const tray = new Tray(drawIcon());
   tray.setToolTip('EngineBuddy');
 
   const menu = () =>
     Menu.buildFromTemplate([
       {
-        label: actions.isVisible() ? 'Hide' : 'Show',
+        label: actions.isVisible() ? t('menu.hide') : t('menu.show'),
         click: () => actions.setVisible(!actions.isVisible()),
       },
-      { label: 'Open chat', click: () => actions.openChat() },
-      { label: 'Settings…', click: () => actions.openSettings() },
+      { label: t('menu.chat'), click: () => actions.openChat() },
+      { label: t('menu.settings'), click: () => actions.openSettings() },
       {
-        label: 'Pause',
+        label: t('menu.pause'),
         type: 'checkbox',
         checked: actions.isPaused(),
         click: (item) => actions.setPaused(item.checked),
       },
       { type: 'separator' },
-      { label: 'Exit', click: () => actions.exit() },
+      { label: t('menu.exit'), click: () => actions.exit() },
     ]);
 
   tray.on('click', () => actions.setVisible(!actions.isVisible()));

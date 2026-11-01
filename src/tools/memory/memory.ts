@@ -108,10 +108,15 @@ export function createMemoryTools(store: MemoryStore): ToolDef[] {
       'Save a short note to remember across restarts: preferences, names, projects, things the user asked you to ' +
       'remember. Not for secrets, passwords or keys, and not for one-off details.',
     input: rememberInput,
-    permission: ({ text }) =>
-      /(password|passwort|api[_ -]?key|token|secret|private key)/i.test(text)
-        ? { permission: 'BLOCKED', reason: "I don't keep anything that looks like a secret." }
-        : { permission: 'SAFE' },
+    permission: ({ text }) => {
+      if (/(password|passwort|api[_ -]?key|token|secret|private key)/i.test(text))
+        return { permission: 'BLOCKED', reason: "I don't keep anything that looks like a secret." };
+      // Notes outlive the conversation, so a web page or file mustn't be able to plant a standing
+      // order in them (docs/security-audit.md, F13): no links, nothing that reads like a rule override.
+      if (/https?:|www\.|\b(ignore|disregard|override|ignorier\w*|missacht\w*)\b/i.test(text))
+        return { permission: 'BLOCKED', reason: 'I only keep plain notes about you, not links or orders.' };
+      return { permission: 'SAFE' };
+    },
     activity: ({ text }) => `Remembering: ${text.length > 60 ? `${text.slice(0, 57)}…` : text}`,
     async execute({ text }) {
       const entry = store.add(text);

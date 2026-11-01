@@ -12,7 +12,9 @@ describe('parseSettings', () => {
       claudeExecutable: undefined,
       claudeModel: undefined,
       projectRoots: [],
-      voice: { enabled: false, voice: '', rate: 1 },
+      internet: true,
+      language: 'system',
+      voice: { enabled: false, voice: '', rate: 1, pitch: 1 },
     });
     expect(parseSettings('nope')).toEqual(parseSettings({}));
   });
@@ -27,7 +29,9 @@ describe('parseSettings', () => {
       claudeExecutable: 'D:\\claude.exe',
       claudeModel: 'sonnet',
       projectRoots: ['D:\\code'],
-      voice: { enabled: true, voice: 'Microsoft Katja', rate: 1.2 },
+      internet: false,
+      language: 'de',
+      voice: { enabled: true, voice: 'Microsoft Katja', rate: 1.2, pitch: 0.9 },
     };
     expect(parseSettings(good)).toEqual(good);
   });
@@ -36,5 +40,14 @@ describe('parseSettings', () => {
     const s = parseSettings({ scale: 99, positions: { '7': { x: 10, y: 20 } } });
     expect(s.scale).toBe(1);
     expect(s.positions).toEqual({ '7': { x: 10, y: 20 } });
+  });
+
+  it('upgrades a 0.2 voice setting (no pitch yet)', () => {
+    expect(parseSettings({ voice: { enabled: true, voice: 'x', rate: 1.5 } }).voice).toEqual({
+      enabled: true,
+      voice: 'x',
+      rate: 1.5,
+      pitch: 1,
+    });
   });
 });

@@ -6,6 +6,7 @@ import { localToolTurn } from '../integrations/local/local-tool-turn';
 import { ConfirmationBroker } from '../security/confirmations/confirmation-broker';
 import type { BuddyCommand, SettingsCommand } from '../shared/commands';
 import { IPC_CHANNELS, type UiRequest } from '../shared/ipc';
+import { resolveLang, translator } from '../shared/i18n';
 import type { SettingsView } from '../shared/settings-view';
 import { MemoryStore } from '../tools/memory/memory';
 import { setUpAgent } from './agent-setup';
@@ -20,9 +21,7 @@ import { createTray } from './tray';
 import { AvatarWindow } from './windows/avatar-window';
 import { ConfirmWindow } from './windows/confirm-window';
 import { PanelWindow } from './windows/panel-window';
-
-/** The startup greeting: local lines, no tokens (docs/PHASE-1.md step 10). */
-const GREETING = ['Hey.', 'What are we building today?'];
+import { setRendererLanguage } from './windows/renderer-url';
 
 const bus = new EventBus();
 bus.on(broadcastEvent);
@@ -50,7 +49,13 @@ if (!app.requestSingleInstanceLock()) {
     const userData = app.getPath('userData');
     const settings = new SettingsStore(join(userData, 'settings.json'));
     const memory = new MemoryStore(join(userData, 'memory.json'));
-    const history = new ConversationStore(join(userData, 'history'));
+    // The UI language: Settings, else Windows' display language. Fixed for this run (a change restarts).
+    const systemLocale = app.getPreferredSystemLanguages()[0] ?? app.getLocale();
+    const lang = resolveLang(settings.get().language, systemLocale);
+    const t = translator(lang);
+    setRendererLanguage(lang);
+
+    const history = new ConversationStore(join(userData, 'history'), t('chat.newTitle'));
     bus.on((event) => history.handle(event));
 
     // Confirmations (SECURITY.md §5): a main-owned window asks you; closing it means no.
@@ -63,7 +68,7 @@ if (!app.requestSingleInstanceLock()) {
         bus.emit({ type: 'confirm_resolved', callId: p.id, allowed: outcome === 'allowed' }),
     });
 
-    const setup = setUpAgent(settings.get(), broker, memory);
+    const setup = setUpAgent(settings.get(), broker, memory, lang);
     const provider = setup.provider;
     const agent = new AgentController({ bus, provider });
     if (setup.problem) console.warn(`[main] ${setup.problem}`);
@@ -74,7 +79,8 @@ if (!app.requestSingleInstanceLock()) {
       if (event.type === 'turn_end') history.setAgentSessionId(provider.conversationId?.());
     });
 
-    const greeting = setup.problem ? [...GREETING, setup.problem] : GREETING;
+    // The startup greeting: local lines, no tokens (docs/PHASE-1.md step 10).
+    const greeting = [t('main.greeting1'), t('main.greeting2'), ...(setup.problem ? [setup.problem] : [])];
     const avatar = new AvatarWindow(settings, {
       greeting: JSON.stringify(greeting),
       // For measuring cold start → greeting (step 10): when this process started, in epoch ms.
@@ -103,7 +109,7 @@ if (!app.requestSingleInstanceLock()) {
     });
     const settingsWindow = new PanelWindow({
       name: 'settings',
-      title: 'EngineBuddy settings',
+      title: t('main.settingsTitle'),
       width: 640,
       height: 720,
       minWidth: 480,
@@ -130,6 +136,9 @@ if (!app.requestSingleInstanceLock()) {
         claudeModel: s.claudeModel ?? '',
         bubbleDismissSeconds: s.bubbleDismissSeconds,
         voice: s.voice,
+        internet: s.internet,
+        language: s.language,
+        systemLanguage: resolveLang('system', systemLocale),
         memories: [...memory.list()],
         restartNeeded,
       };
@@ -197,7 +206,7 @@ if (!app.requestSingleInstanceLock()) {
             .then((image) => chatWindow.send(IPC_CHANNELS.chat, { type: 'attachment', image }))
             .catch((error: unknown) => {
               console.warn('[main] screenshot failed:', error);
-              chatWindow.send(IPC_CHANNELS.chat, { type: 'notice', text: "Couldn't take a screenshot." });
+              chatWindow.send(IPC_CHANNELS.chat, { type: 'notice', text: t('main.screenshotFailed') });
             });
           break;
         case 'open_chat':
@@ -221,16 +230,24 @@ if (!app.requestSingleInstanceLock()) {
             ...(patch.claudeModel !== undefined ? { claudeModel: patch.claudeModel || undefined } : {}),
             ...(patch.bubbleDismissSeconds ? { bubbleDismissSeconds: patch.bubbleDismissSeconds } : {}),
             ...(patch.voice ? { voice: patch.voice } : {}),
+            ...(patch.internet !== undefined ? { internet: patch.internet } : {}),
+            ...(patch.language ? { language: patch.language } : {}),
           });
           const after = settings.get();
-          if (before.agent !== after.agent || before.claudeModel !== after.claudeModel) restartNeeded = true;
+          if (
+            before.agent !== after.agent ||
+            before.claudeModel !== after.claudeModel ||
+            before.internet !== after.internet ||
+            before.language !== after.language
+          )
+            restartNeeded = true;
           if (patch.voice) pushVoice();
           break;
         }
         case 'add_root': {
           // Only a folder you pick in Windows' own dialog gets in, never a path from a renderer.
           const picked = await dialog.showOpenDialog(from, {
-            title: 'Add a project folder',
+            title: t('main.addFolder'),
             properties: ['openDirectory'],
           });
           const path = picked.filePaths[0];
@@ -262,26 +279,20 @@ if (!app.requestSingleInstanceLock()) {
     // Folder picker → open_in_vscode as a local turn: no model needed, same policy, audit and UI.
     const openInVsCode = async () => {
       const picked = await dialog.showOpenDialog(avatar.win, {
-        title: 'Open in VS Code',
+        title: t('menu.vscode').replace('…', ''),
         properties: ['openDirectory'],
       });
       const path = picked.filePaths[0];
       if (picked.canceled || !path) return;
       agent.submit(
         { text: `Open ${path} in VS Code`, source: 'menu', intent: 'open_in_vscode' },
-        localToolTurn(
-          setup.registry,
-          setup.runner,
-          'open_in_vscode',
-          { path },
-          () => "Done. It's open in VS Code.",
-        ),
+        localToolTurn(setup.registry, setup.runner, 'open_in_vscode', { path }, () => t('main.vscodeDone')),
       );
     };
 
     const exit = () => app.quit();
     avatar.onContextMenu = () =>
-      showContextMenu(avatar.win, {
+      showContextMenu(avatar.win, t, {
         ask: () => avatar.openBubble(),
         openChat: () => chatWindow.open(),
         openSettings: () => settingsWindow.open(),
@@ -310,7 +321,7 @@ if (!app.requestSingleInstanceLock()) {
       },
     );
 
-    const tray = createTray({
+    const tray = createTray(t, {
       isVisible: () => avatar.visible,
       setVisible: (visible) => avatar.setVisible(visible),
       isPaused: () => paused,

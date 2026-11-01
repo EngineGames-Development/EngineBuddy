@@ -9,6 +9,7 @@
 import { z } from 'zod';
 import type { Permission, PolicyContext, ToolRegistry } from '../../core/tools/tool-def';
 import { isEnvFile, isInside, normalisePath, type PathEnv, type SecretPaths } from './paths';
+import { checkWebUrl } from './web';
 
 /** Our in-process MCP server's name; Claude Code prefixes our tools with `mcp__<server>__`. */
 export const MCP_SERVER = 'enginebuddy';
@@ -36,6 +37,8 @@ export interface PolicyOptions {
   /** Relative paths in tool input resolve against this (the agent's cwd). */
   cwd: string;
   realpath?: (p: string) => string;
+  /** WebSearch / WebFetch allowed (Settings → Internet). Off unless set. */
+  web?: boolean;
 }
 
 const REASONS = {
@@ -44,7 +47,7 @@ const REASONS = {
   envFile: "That's a .env file. Reading those will need your OK, and I can't ask for that yet.",
   shell: 'Use run_command for that instead: it shows you the exact command and asks you first.',
   write: 'Use write_file or edit_file for that instead: they show you the change first and ask.',
-  web: "I can't go online yet.",
+  webOff: 'Internet access is switched off in my settings.',
   unknown: "That tool isn't on my list, so no.",
   badInput: "That request didn't look right, so I didn't run it.",
   badPath: "I couldn't make sense of that path, so I left it alone.",
@@ -55,6 +58,8 @@ const REASONS = {
 // fields we decide on must be there and be strings.
 const readInput = z.object({ file_path: z.string().min(1) });
 const globInput = z.object({ pattern: z.string().min(1), path: z.string().optional() });
+const searchInput = z.object({ query: z.string().min(1).max(500) });
+const fetchInput = z.object({ url: z.string().min(1), prompt: z.string().optional() });
 
 const CONFIRM_BUILTINS: Record<string, keyof typeof REASONS> = {
   Bash: 'shell',
@@ -63,8 +68,6 @@ const CONFIRM_BUILTINS: Record<string, keyof typeof REASONS> = {
   Edit: 'write',
   MultiEdit: 'write',
   NotebookEdit: 'write',
-  WebFetch: 'web',
-  WebSearch: 'web',
 };
 
 export class PolicyEngine {
@@ -77,6 +80,9 @@ export class PolicyEngine {
         return this.evaluateRead(rawInput);
       case 'Glob':
         return this.evaluateGlob(rawInput);
+      case 'WebSearch':
+      case 'WebFetch':
+        return this.evaluateWeb(toolName, rawInput);
     }
     const confirmReason = CONFIRM_BUILTINS[toolName];
     if (confirmReason) return this.confirm(toolName, REASONS[confirmReason], `builtin:${toolName}`);
@@ -126,6 +132,19 @@ export class PolicyEngine {
       return deny('Glob', 'BLOCKED', REASONS.outside, 'glob-escape');
     }
     return this.evaluatePath('Glob', path ?? this.opts.cwd, { reading: false });
+  }
+
+  private evaluateWeb(tool: 'WebSearch' | 'WebFetch', rawInput: unknown): Decision {
+    if (!this.opts.web) return deny(tool, 'BLOCKED', REASONS.webOff, 'web-off');
+    if (tool === 'WebSearch') {
+      return searchInput.safeParse(rawInput).success
+        ? allow(tool, 'web-search')
+        : deny(tool, 'BLOCKED', REASONS.badInput, 'invalid-input');
+    }
+    const parsed = fetchInput.safeParse(rawInput);
+    if (!parsed.success) return deny(tool, 'BLOCKED', REASONS.badInput, 'invalid-input');
+    const verdict = checkWebUrl(parsed.data.url);
+    return verdict.ok ? allow(tool, 'web-fetch') : deny(tool, 'BLOCKED', verdict.reason, 'web-url');
   }
 
   private evaluatePath(tool: string, rawPath: string, { reading }: { reading: boolean }): Decision {

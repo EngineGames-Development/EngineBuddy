@@ -8,6 +8,7 @@ import { MarkdownView } from './MarkdownView';
 import { onSay } from '../avatar/greeting';
 import { chooseSide, placeBubble, workAreaInWindow, type Side } from './placement';
 import './bubble.css';
+import { t } from '../common/i18n';
 
 interface Props {
   /** Bumped by the parent to open the bubble with the input focused (avatar click). */
@@ -114,7 +115,7 @@ export function SpeechBubble({ openSignal, dismissMs, scale }: Props) {
 
   const send = (e: FormEvent) => {
     e.preventDefault();
-    const text = draft.trim() || (pictures.length ? 'Look at this.' : '');
+    const text = draft.trim() || (pictures.length ? t('common.lookAtThis') : '');
     if (!text) return;
     window.buddy.send({
       type: 'user_input',
@@ -136,7 +137,7 @@ export function SpeechBubble({ openSignal, dismissMs, scale }: Props) {
       dispatch({ type: 'open' });
       input.current?.focus();
     } catch {
-      dispatch({ type: 'say', text: "Couldn't read that picture.", append: false });
+      dispatch({ type: 'say', text: t('common.pictureFailed'), append: false });
     }
   };
 
@@ -195,7 +196,7 @@ export function SpeechBubble({ openSignal, dismissMs, scale }: Props) {
               <img src={imageUrl(img)} alt="" />
               <button
                 type="button"
-                title="Remove"
+                title={t('common.remove')}
                 onClick={() => setPictures((p) => p.filter((_, j) => j !== i))}
               >
                 ×
@@ -209,7 +210,7 @@ export function SpeechBubble({ openSignal, dismissMs, scale }: Props) {
           ref={input}
           value={draft}
           maxLength={MAX_INPUT_LENGTH}
-          placeholder={state.busy ? 'Ask a follow-up…' : 'Ask EngineBuddy…'}
+          placeholder={state.busy ? t('bubble.followUp') : t('bubble.ask')}
           onChange={(e) => setDraft(e.target.value)}
           onPaste={(e) => {
             const files = [...e.clipboardData.items]
@@ -226,7 +227,7 @@ export function SpeechBubble({ openSignal, dismissMs, scale }: Props) {
         <button
           type="button"
           className="expand"
-          title="Open the chat window (history, pictures)"
+          title={t('bubble.openChat')}
           onClick={() => window.buddy.send({ type: 'open_chat' })}
         >
           ⤢
@@ -235,7 +236,7 @@ export function SpeechBubble({ openSignal, dismissMs, scale }: Props) {
           <button
             type="button"
             className="stop"
-            title="Stop"
+            title={t('common.stop')}
             onClick={() => window.buddy.send({ type: 'cancel_turn' })}
           >
             ■

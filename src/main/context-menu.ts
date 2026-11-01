@@ -1,4 +1,5 @@
 import { Menu, type BrowserWindow } from 'electron';
+import type { Translate } from '../shared/i18n';
 
 export interface ContextMenuActions {
   ask(): void;
@@ -15,17 +16,17 @@ export interface ContextMenuActions {
  * The avatar's right-click menu (docs/PHASE-1.md step 9). Native for Phase 1 (ARCHITECTURE.md D7),
  * and only items that work. Built on every open, so Pause/Resume matches the current state.
  */
-export function showContextMenu(win: BrowserWindow, actions: ContextMenuActions): void {
+export function showContextMenu(win: BrowserWindow, t: Translate, actions: ContextMenuActions): void {
   const paused = actions.isPaused();
   Menu.buildFromTemplate([
-    { label: 'Ask EngineBuddy', click: () => actions.ask(), enabled: !paused },
-    { label: 'Open chat', click: () => actions.openChat() },
+    { label: t('menu.ask'), click: () => actions.ask(), enabled: !paused },
+    { label: t('menu.chat'), click: () => actions.openChat() },
     { type: 'separator' },
-    { label: 'System check', click: () => actions.systemCheck(), enabled: !paused },
-    { label: 'Open in VS Code…', click: () => actions.openInVsCode(), enabled: !paused },
+    { label: t('menu.systemCheck'), click: () => actions.systemCheck(), enabled: !paused },
+    { label: t('menu.vscode'), click: () => actions.openInVsCode(), enabled: !paused },
     { type: 'separator' },
-    { label: 'Settings…', click: () => actions.openSettings() },
-    { label: paused ? 'Resume' : 'Pause', click: () => actions.setPaused(!paused) },
-    { label: 'Exit', click: () => actions.exit() },
+    { label: t('menu.settings'), click: () => actions.openSettings() },
+    { label: paused ? t('menu.resume') : t('menu.pause'), click: () => actions.setPaused(!paused) },
+    { label: t('menu.exit'), click: () => actions.exit() },
   ]).popup({ window: win });
 }

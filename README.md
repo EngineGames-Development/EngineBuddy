@@ -84,7 +84,12 @@ in my Downloads folder?" (asks before running anything).
 - **Change files:** in your project folders, after you saw the diff and clicked Allow.
 - **Memory:** ask it to remember something; it keeps short notes across restarts (see and delete
   them in Settings).
-- **Voice:** reads replies aloud with a Windows voice (Settings → Voice).
+- **Internet:** searches the web and reads public pages for current answers, and says where the
+  answer came from (Settings → Internet; never your own network).
+- **Your language:** menus and windows in English, Deutsch, Français or Español, following Windows
+  by default; Claude answers in the language you write in.
+- **Voice:** reads replies aloud, picking the best installed voice for the reply's language
+  (natural voices first); speed and pitch in Settings → Voice.
 - Plus system checks, opening programs, and commands (with your OK).
 
 ## Settings
@@ -98,7 +103,9 @@ Most settings are in the Settings window. They live in `%APPDATA%\enginebuddy\se
 | `claudeExecutable` | auto | Path to `claude.exe` if it isn't found automatically |
 | `claudeModel` | Claude Code's default | e.g. `"sonnet"` |
 | `bubbleDismissSeconds` | `12` | How long a reply stays up |
-| `voice` | off | `{ "enabled": true, "voice": "Microsoft Katja", "rate": 1 }` |
+| `voice` | off | `{ "enabled": true, "voice": "", "rate": 1, "pitch": 1 }` (`""` = automatic) |
+| `internet` | `true` | Web search and reading public pages |
+| `language` | `"system"` | `"system"`, `"en"`, `"de"`, `"fr"` or `"es"` |
 | `scale`, `positions` | | Remembered size and position |
 
 Every tool request, allowed or refused, is logged in `%APPDATA%\enginebuddy\logs\` (kept 30 days).
@@ -109,13 +116,16 @@ EngineBuddy is a language model with hands on your PC, so it's built on the assu
 model can be wrong or tricked (by a file it reads, say). In short:
 
 - **Safe things run directly:** system info, opening a fixed list of programs (Explorer, Terminal,
-  VS Code, Notepad, Task Manager, Calculator), reading files in your project folders.
+  VS Code, Notepad, Task Manager, Calculator), reading files in your project folders, searching the
+  web and reading public pages (never addresses in your own network).
 - **File changes need your click** in the same window, which shows the exact diff.
 - **Commands need your click** in a separate window that shows the exact command, the folder, and
   EngineBuddy's reason (labelled as such). Cancel is the default; Enter never means yes; no answer
   in 2 minutes means no.
 - **Some things are always refused:** passwords, browser data, SSH keys, `.env` files, wiping
   disks, switching off security, hidden or self-starting commands.
+
+See also the [roadmap](ROADMAP.md).
 
 Details: [SECURITY.md](SECURITY.md) (the permission model) and
 [docs/security-audit.md](docs/security-audit.md) (what was checked, what was fixed, what risks remain).

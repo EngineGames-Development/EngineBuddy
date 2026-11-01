@@ -74,11 +74,25 @@ export function describeTool(registry: ToolRegistry): DescribeTool {
       case 'MultiEdit':
       case 'NotebookEdit':
         return { tool: name, category: 'filesystem', activity: 'Editing a file' };
-      case 'WebFetch':
       case 'WebSearch':
-        return { tool: name, category: 'apps', activity: 'Looking something up online' };
+        return { tool: name, category: 'web', activity: `Searching: ${clip(field('query') ?? 'the web')}` };
+      case 'WebFetch':
+        return { tool: name, category: 'web', activity: `Reading ${hostOf(field('url'))}` };
       default:
         return { tool: name, category: 'system', activity: `Using ${name}` };
     }
   };
+}
+
+function clip(text: string, max = 60): string {
+  return text.length > max ? `${text.slice(0, max - 1)}…` : text;
+}
+
+/** Only the host goes in the activity list: the full URL could be long or carry noise. */
+function hostOf(url: string | undefined): string {
+  try {
+    return new URL(url ?? '').hostname || 'a web page';
+  } catch {
+    return 'a web page';
+  }
 }

@@ -1,6 +1,7 @@
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { type BrowserWindow } from 'electron';
+import type { Lang } from '../../shared/i18n';
 
 export type RendererWindow = 'avatar' | 'confirm' | 'chat' | 'settings';
 
@@ -9,12 +10,20 @@ export type RendererWindow = 'avatar' | 'confirm' | 'chat' | 'settings';
 const devServerUrl = process.env['ELECTRON_RENDERER_URL'];
 const builtRendererDir = join(__dirname, '../renderer');
 
+let language: Lang = 'en';
+
+/** The UI language every page is loaded with from now on (`?lang=`, renderer/common/i18n.ts). */
+export function setRendererLanguage(lang: Lang): void {
+  language = lang;
+}
+
 /** Load a renderer page. `query` passes read-only startup settings to the page. */
 export function loadRenderer(
   win: BrowserWindow,
   name: RendererWindow,
-  query: Record<string, string> = {},
+  extra: Record<string, string> = {},
 ): Promise<void> {
+  const query = { lang: language, ...extra };
   return devServerUrl
     ? win.loadURL(`${devServerUrl}/${name}/index.html?${new URLSearchParams(query)}`)
     : win.loadFile(join(builtRendererDir, name, 'index.html'), { query });

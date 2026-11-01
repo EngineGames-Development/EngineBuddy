@@ -2,6 +2,7 @@
 // The bubble shows one turn at a time: what you asked, the narration, the activity list and the
 // reply as it streams in.
 import type { BuddyEvent } from '../../shared/events';
+import { t } from '../common/i18n';
 
 export interface Activity {
   callId: string;
@@ -86,8 +87,8 @@ export function bubbleReducer(state: BubbleState, action: BubbleAction): BubbleS
       return e.mode === 'sleep' ? { ...state, open: false } : state;
 
     case 'confirm_resolved':
-      return state.narration?.startsWith('Waiting for your OK')
-        ? { ...state, narration: e.allowed ? 'You said yes. Running it…' : 'You said no.' }
+      return state.narration === t('bubble.waiting')
+        ? { ...state, narration: e.allowed ? t('bubble.yes') : t('bubble.no') }
         : state;
 
     case 'user_idle':
@@ -126,14 +127,14 @@ export function bubbleReducer(state: BubbleState, action: BubbleAction): BubbleS
         ),
       };
     case 'confirm_request':
-      return { ...state, narration: 'Waiting for your OK in the confirmation window…' };
+      return { ...state, narration: t('bubble.waiting') };
     case 'turn_end':
       return {
         ...state,
         busy: false,
         // A tool that never reported back didn't finish.
         activities: state.activities.map((a) => (a.status === 'running' ? { ...a, status: 'failed' } : a)),
-        narration: e.outcome === 'cancelled' && !state.text ? 'Stopped.' : state.narration,
+        narration: e.outcome === 'cancelled' && !state.text ? t('bubble.stopped') : state.narration,
       };
   }
 }
