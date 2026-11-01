@@ -5,7 +5,7 @@
 // Allow needs a mouse click, or Tab to it and Space, and is disabled for the first moments.
 import { StrictMode, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import type { ConfirmationRequest } from '../../shared/events';
+import type { ConfirmationRequest, DiffLine } from '../../shared/events';
 import './confirm.css';
 
 interface Pending {
@@ -14,6 +14,8 @@ interface Pending {
   timeoutMs: number;
   allowDelayMs: number;
 }
+
+const SIGN: Record<DiffLine['kind'], string> = { same: ' ', add: '+', del: '-', gap: '⋯' };
 
 function readPending(): Pending | undefined {
   try {
@@ -65,7 +67,18 @@ function Confirm({ pending }: { pending: Pending }) {
         </span>
       </header>
 
-      <pre className="target">{request.target}</pre>
+      <pre className={`target${request.diff ? ' path' : ''}`}>{request.target}</pre>
+
+      {request.diff && (
+        <div className="diff" role="table" aria-label="The change">
+          {request.diff.map((line, i) => (
+            <div key={i} className={line.kind}>
+              <span className="sign">{SIGN[line.kind]}</span>
+              {line.text || ' '}
+            </div>
+          ))}
+        </div>
+      )}
 
       <ul className="details">
         {request.details.map((d) => (

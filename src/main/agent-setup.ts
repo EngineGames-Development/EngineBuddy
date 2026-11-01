@@ -14,6 +14,7 @@ import { SecretPaths, normalisePath, type PathEnv } from '../security/policy/pat
 import { PolicyEngine } from '../security/policy/policy-engine';
 import { ToolRunner } from '../security/tool-runner';
 import { createToolRegistry } from '../tools';
+import type { MemoryStore } from '../tools/memory/memory';
 import type { Settings } from './settings/schema';
 
 export interface AgentSetup {
@@ -28,7 +29,11 @@ export interface AgentSetup {
  * Builds the tool and security stack and the agent. Claude Code works in the first project root;
  * with none configured, in an empty `userData/workspace` folder (so it can't wander anywhere).
  */
-export function setUpAgent(settings: Readonly<Settings>, broker: ConfirmationBroker): AgentSetup {
+export function setUpAgent(
+  settings: Readonly<Settings>,
+  broker: ConfirmationBroker,
+  memory: MemoryStore,
+): AgentSetup {
   const userData = app.getPath('userData');
   const env: PathEnv = {
     home: homedir(),
@@ -52,6 +57,7 @@ export function setUpAgent(settings: Readonly<Settings>, broker: ConfirmationBro
     systemRoot: env.systemRoot,
     // Approved commands don't get API keys or billing switches either (SECURITY.md §10).
     env: () => subscriptionOnlyEnv(process.env),
+    memory,
   });
   const audit = new AuditLog(join(userData, 'logs'));
   const policy = new PolicyEngine({ registry, secrets: new SecretPaths(env), env, projectRoots: roots, cwd });
@@ -76,6 +82,7 @@ export function setUpAgent(settings: Readonly<Settings>, broker: ConfirmationBro
     policy,
     runner,
     audit,
+    extraPrompt: () => memory.promptSection(),
     ...(settings.claudeModel ? { model: settings.claudeModel } : {}),
   });
   return { provider, registry, runner };

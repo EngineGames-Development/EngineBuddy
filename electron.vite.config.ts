@@ -42,6 +42,8 @@ export default defineConfig({
         input: {
           avatar: resolve(__dirname, 'src/renderer/avatar/index.html'),
           confirm: resolve(__dirname, 'src/renderer/confirm/index.html'),
+          chat: resolve(__dirname, 'src/renderer/chat/index.html'),
+          settings: resolve(__dirname, 'src/renderer/settings/index.html'),
         },
       },
     },

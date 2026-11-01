@@ -1,39 +1,31 @@
 import { join } from 'node:path';
-import { Menu, app, dialog, session } from 'electron';
+import { Menu, app, dialog, session, type BrowserWindow } from 'electron';
 import { AgentController } from '../core/agent/agent-controller';
 import { EventBus } from '../core/events/event-bus';
 import { localToolTurn } from '../integrations/local/local-tool-turn';
 import { ConfirmationBroker } from '../security/confirmations/confirmation-broker';
-import type { BuddyCommand } from '../shared/commands';
+import type { BuddyCommand, SettingsCommand } from '../shared/commands';
+import { IPC_CHANNELS, type UiRequest } from '../shared/ipc';
+import type { SettingsView } from '../shared/settings-view';
+import { MemoryStore } from '../tools/memory/memory';
 import { setUpAgent } from './agent-setup';
 import { showContextMenu } from './context-menu';
+import { ConversationStore } from './history/conversation-store';
 import { broadcastEvent } from './ipc/broadcast';
 import { registerIpc } from './ipc/ipc-router';
+import { takeScreenshot } from './screenshot';
 import { hardenWebContents } from './security/harden';
 import { SettingsStore } from './settings/settings-store';
 import { createTray } from './tray';
 import { AvatarWindow } from './windows/avatar-window';
 import { ConfirmWindow } from './windows/confirm-window';
+import { PanelWindow } from './windows/panel-window';
 
 /** The startup greeting: local lines, no tokens (docs/PHASE-1.md step 10). */
 const GREETING = ['Hey.', 'What are we building today?'];
 
 const bus = new EventBus();
 bus.on(broadcastEvent);
-
-let agent: AgentController;
-
-function handleCommand(command: BuddyCommand): void {
-  switch (command.type) {
-    case 'user_input':
-      bus.emit({ type: 'user_input', text: command.text, source: command.source });
-      agent.submit({ text: command.text, source: command.source });
-      break;
-    case 'cancel_turn':
-      agent.cancel();
-      break;
-  }
-}
 
 // One EngineBuddy per desktop. A second launch exits, and the first one shows itself.
 if (!app.requestSingleInstanceLock()) {
@@ -48,13 +40,18 @@ if (!app.requestSingleInstanceLock()) {
 
   void app.whenReady().then(() => {
     // Our pages never need the camera, microphone, location, notifications, etc. Electron grants
-    // such requests by default; deny them all (docs/security-audit.md, F1).
+    // such requests by default; deny them all (docs/security-audit.md, F1). Screenshots are taken
+    // by main itself (desktopCapturer), not by a page.
     session.defaultSession.setPermissionRequestHandler((_wc, _permission, callback) => callback(false));
     session.defaultSession.setPermissionCheckHandler(() => false);
 
     const sinceStart = () => `${Math.round(process.uptime() * 1000)} ms after start`;
     console.log(`[main] ready ${sinceStart()}`);
-    const settings = new SettingsStore(join(app.getPath('userData'), 'settings.json'));
+    const userData = app.getPath('userData');
+    const settings = new SettingsStore(join(userData, 'settings.json'));
+    const memory = new MemoryStore(join(userData, 'memory.json'));
+    const history = new ConversationStore(join(userData, 'history'));
+    bus.on((event) => history.handle(event));
 
     // Confirmations (SECURITY.md §5): a main-owned window asks you; closing it means no.
     const confirmWindow = new ConfirmWindow((id) => broker.answer(id, false));
@@ -66,10 +63,16 @@ if (!app.requestSingleInstanceLock()) {
         bus.emit({ type: 'confirm_resolved', callId: p.id, allowed: outcome === 'allowed' }),
     });
 
-    const setup = setUpAgent(settings.get(), broker);
-    agent = new AgentController({ bus, provider: setup.provider });
+    const setup = setUpAgent(settings.get(), broker, memory);
+    const provider = setup.provider;
+    const agent = new AgentController({ bus, provider });
     if (setup.problem) console.warn(`[main] ${setup.problem}`);
-    console.log(`[main] agent: ${setup.provider.id}`);
+    console.log(`[main] agent: ${provider.id}`);
+
+    // Each conversation remembers Claude Code's session, so reopening it continues it.
+    bus.on((event) => {
+      if (event.type === 'turn_end') history.setAgentSessionId(provider.conversationId?.());
+    });
 
     const greeting = setup.problem ? [...GREETING, setup.problem] : GREETING;
     const avatar = new AvatarWindow(settings, {
@@ -81,8 +84,63 @@ if (!app.requestSingleInstanceLock()) {
       console.log(`[main] avatar shown ${sinceStart()} at`, avatar.avatarRect());
       // Only now start Claude Code in the background, while the avatar greets you (~14 s cold,
       // spike 0b). Loading the SDK and spawning the process earlier delayed the window by seconds.
-      setup.provider.prewarm?.().catch((error: unknown) => console.warn('[main] prewarm failed:', error));
+      // It continues the conversation you had open last time.
+      const last = history.active.agentSessionId;
+      const start =
+        last && provider.switchConversation ? provider.switchConversation(last) : provider.prewarm?.();
+      start?.catch((error: unknown) => console.warn('[main] prewarm failed:', error));
     });
+
+    // Chat and settings: ordinary windows, opened from the menu, the tray or the bubble.
+    const chatWindow = new PanelWindow({
+      name: 'chat',
+      title: 'EngineBuddy',
+      width: 900,
+      height: 680,
+      minWidth: 520,
+      minHeight: 400,
+      onLoad: () => pushChat(),
+    });
+    const settingsWindow = new PanelWindow({
+      name: 'settings',
+      title: 'EngineBuddy settings',
+      width: 640,
+      height: 720,
+      minWidth: 480,
+      minHeight: 480,
+      onLoad: () => pushSettings(),
+    });
+    const pushChat = () => chatWindow.send(IPC_CHANNELS.chat, { type: 'state', state: history.state() });
+    history.onChange(pushChat);
+
+    // Point Claude Code at the active conversation, stopping whatever ran in the old one.
+    const followConversation = () => {
+      agent.cancel();
+      broker.denyAll();
+      const wanted = history.active.agentSessionId;
+      if (wanted !== provider.conversationId?.()) void provider.switchConversation?.(wanted);
+    };
+
+    let restartNeeded = false;
+    const settingsView = (): SettingsView => {
+      const s = settings.get();
+      return {
+        projectRoots: s.projectRoots,
+        agent: s.agent,
+        claudeModel: s.claudeModel ?? '',
+        bubbleDismissSeconds: s.bubbleDismissSeconds,
+        voice: s.voice,
+        memories: [...memory.list()],
+        restartNeeded,
+      };
+    };
+    const pushSettings = () => settingsWindow.send(IPC_CHANNELS.settings, settingsView());
+    memory.onChange(pushSettings);
+    const pushVoice = () => {
+      const request: UiRequest = { type: 'voice', voice: settings.get().voice };
+      avatar.win.webContents.send(IPC_CHANNELS.ui, request);
+    };
+    avatar.win.webContents.on('did-finish-load', pushVoice);
 
     // Pause = the Sleep mode: the avatar sleeps and the controller refuses new turns.
     let paused = false;
@@ -95,6 +153,105 @@ if (!app.requestSingleInstanceLock()) {
       }
       agent.setMode(mode);
       bus.emit({ type: 'mode_changed', mode });
+    };
+
+    const handleCommand = (command: BuddyCommand, from: BrowserWindow): void => {
+      switch (command.type) {
+        case 'user_input':
+          history.addUserMessage(command.text, command.images);
+          bus.emit({ type: 'user_input', text: command.text, source: command.source });
+          agent.submit({
+            text: command.text,
+            source: command.source,
+            ...(command.images ? { images: command.images } : {}),
+          });
+          break;
+        case 'cancel_turn':
+          agent.cancel();
+          break;
+        case 'chat_ready':
+          pushChat();
+          break;
+        case 'chat_new':
+          history.startNew();
+          followConversation();
+          break;
+        case 'chat_open':
+          if (history.active.id !== command.id && history.open(command.id)) followConversation();
+          break;
+        case 'chat_delete': {
+          const wasActive = history.active.id === command.id;
+          history.delete(command.id);
+          if (wasActive) followConversation();
+          break;
+        }
+        case 'take_screenshot':
+          // Only the chat window has the camera button; it's hidden for the capture.
+          if (!chatWindow.owns(from.webContents)) return;
+          takeScreenshot(from)
+            .then((image) => chatWindow.send(IPC_CHANNELS.chat, { type: 'attachment', image }))
+            .catch((error: unknown) => {
+              console.warn('[main] screenshot failed:', error);
+              chatWindow.send(IPC_CHANNELS.chat, { type: 'notice', text: "Couldn't take a screenshot." });
+            });
+          break;
+        case 'open_chat':
+          chatWindow.open();
+          break;
+        case 'open_settings':
+          settingsWindow.open();
+          break;
+      }
+    };
+
+    const handleSettings = async (command: SettingsCommand, from: BrowserWindow): Promise<void> => {
+      switch (command.type) {
+        case 'ready':
+          break;
+        case 'update': {
+          const { patch } = command;
+          const before = settings.get();
+          settings.update({
+            ...(patch.agent ? { agent: patch.agent } : {}),
+            ...(patch.claudeModel !== undefined ? { claudeModel: patch.claudeModel || undefined } : {}),
+            ...(patch.bubbleDismissSeconds ? { bubbleDismissSeconds: patch.bubbleDismissSeconds } : {}),
+            ...(patch.voice ? { voice: patch.voice } : {}),
+          });
+          const after = settings.get();
+          if (before.agent !== after.agent || before.claudeModel !== after.claudeModel) restartNeeded = true;
+          if (patch.voice) pushVoice();
+          break;
+        }
+        case 'add_root': {
+          // Only a folder you pick in Windows' own dialog gets in, never a path from a renderer.
+          const picked = await dialog.showOpenDialog(from, {
+            title: 'Add a project folder',
+            properties: ['openDirectory'],
+          });
+          const path = picked.filePaths[0];
+          if (picked.canceled || !path || settings.get().projectRoots.includes(path)) break;
+          settings.update({ projectRoots: [...settings.get().projectRoots, path] });
+          restartNeeded = true;
+          break;
+        }
+        case 'remove_root':
+          if (!settings.get().projectRoots.includes(command.path)) break;
+          settings.update({ projectRoots: settings.get().projectRoots.filter((p) => p !== command.path) });
+          restartNeeded = true;
+          break;
+        case 'forget':
+          memory.remove(command.id);
+          break;
+        case 'forget_all':
+          memory.clear();
+          break;
+        case 'restart':
+          settings.flush();
+          app.relaunch();
+          app.exit(0);
+          return;
+      }
+      pushSettings();
     };
 
     // Folder picker → open_in_vscode as a local turn: no model needed, same policy, audit and UI.
@@ -121,6 +278,8 @@ if (!app.requestSingleInstanceLock()) {
     avatar.onContextMenu = () =>
       showContextMenu(avatar.win, {
         ask: () => avatar.openBubble(),
+        openChat: () => chatWindow.open(),
+        openSettings: () => settingsWindow.open(),
         // A structured intent through the controller: the same path as typed text (tool, narration, reaction).
         systemCheck: () => agent.submit({ text: 'System check', source: 'menu', intent: 'system_check' }),
         openInVsCode: () => void openInVsCode(),
@@ -139,6 +298,11 @@ if (!app.requestSingleInstanceLock()) {
         if (confirmWindow.owns(from.webContents, answer.id)) broker.answer(answer.id, answer.allowed);
         else console.warn('[main] ignored a confirmation answer from the wrong window');
       },
+      // Settings change what EngineBuddy may touch, so only the settings window may send them.
+      (command, from) => {
+        if (settingsWindow.owns(from.webContents)) void handleSettings(command, from);
+        else console.warn('[main] ignored a settings command from the wrong window');
+      },
     );
 
     const tray = createTray({
@@ -146,6 +310,8 @@ if (!app.requestSingleInstanceLock()) {
       setVisible: (visible) => avatar.setVisible(visible),
       isPaused: () => paused,
       setPaused,
+      openChat: () => chatWindow.open(),
+      openSettings: () => settingsWindow.open(),
       exit,
     });
 
@@ -153,8 +319,10 @@ if (!app.requestSingleInstanceLock()) {
     app.on('before-quit', () => {
       settings.flush();
       broker.denyAll();
+      chatWindow.destroy();
+      settingsWindow.destroy();
       tray.destroy();
-      void setup.provider.dispose();
+      void provider.dispose();
     });
   });
 }

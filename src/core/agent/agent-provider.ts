@@ -1,5 +1,6 @@
 // The interface every brain implements (ARCHITECTURE.md §6.1). The UI never sees a provider: the
 // AgentController runs it and turns what it yields into BuddyEvents on the bus.
+import type { ImageAttachment } from '../../shared/chat';
 import type { DesktopMode, EventOf, TurnSource } from '../../shared/events';
 
 /** Structured requests from menus, so they take the same path as typed text. */
@@ -9,6 +10,8 @@ export interface TurnInput {
   text: string;
   source: TurnSource;
   intent?: TurnIntent;
+  /** Pictures sent along (validated in main). */
+  images?: ImageAttachment[];
 }
 
 export interface TurnContext {
@@ -37,5 +40,12 @@ export interface AgentProvider {
   cancel(turnId: string): Promise<void>;
   /** Optional: get ready in the background (e.g. start a warm session) before the first turn. */
   prewarm?(): Promise<void>;
+  /**
+   * Optional: the provider's own ID for the current conversation (Claude Code's session ID), so
+   * the chat history can resume it later.
+   */
+  conversationId?(): string | undefined;
+  /** Optional: continue a stored conversation (`resumeId`), or start a fresh one (undefined). */
+  switchConversation?(resumeId: string | undefined): Promise<void>;
   dispose(): Promise<void>;
 }

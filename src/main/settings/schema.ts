@@ -22,6 +22,14 @@ export const settingsSchema = z.object({
   claudeModel: z.string().optional().catch(undefined),
   /** Folders EngineBuddy may read freely. The first one is the agent's working folder. */
   projectRoots: z.array(z.string()).catch([]),
+  /** Read replies aloud (Windows voices, in the avatar window). */
+  voice: z
+    .object({
+      enabled: z.boolean().catch(false),
+      voice: z.string().max(200).catch(''),
+      rate: z.number().min(0.5).max(2).catch(1),
+    })
+    .catch({ enabled: false, voice: '', rate: 1 }),
 });
 
 export type Settings = z.infer<typeof settingsSchema>;

@@ -5,11 +5,13 @@ export interface TrayActions {
   setVisible(visible: boolean): void;
   isPaused(): boolean;
   setPaused(paused: boolean): void;
+  openChat(): void;
+  openSettings(): void;
   exit(): void;
 }
 
 /**
- * The tray icon (ARCHITECTURE.md §8.2): Show/Hide, Pause, Exit. Left-click toggles visibility.
+ * The tray icon (ARCHITECTURE.md §8.2): Show/Hide, Chat, Settings, Pause, Exit. Left-click toggles visibility.
  * The menu is rebuilt on every open, so its labels always match the current state.
  */
 export function createTray(actions: TrayActions): Tray {
@@ -22,6 +24,8 @@ export function createTray(actions: TrayActions): Tray {
         label: actions.isVisible() ? 'Hide' : 'Show',
         click: () => actions.setVisible(!actions.isVisible()),
       },
+      { label: 'Open chat', click: () => actions.openChat() },
+      { label: 'Settings…', click: () => actions.openSettings() },
       {
         label: 'Pause',
         type: 'checkbox',

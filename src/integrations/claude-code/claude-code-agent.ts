@@ -21,6 +21,7 @@ import type { AgentEvent, AgentProvider, TurnContext, TurnInput } from '../../co
 import { AsyncQueue } from '../../core/agent/async-queue';
 import { LinePicker, PERSONALITY_PROMPT } from '../../core/personality/personality';
 import type { ToolRegistry } from '../../core/tools/tool-def';
+import type { ImageAttachment } from '../../shared/chat';
 import type { AuditSink } from '../../security/audit/audit-log';
 import { MCP_SERVER, type PolicyEngine } from '../../security/policy/policy-engine';
 import type { ToolRunner } from '../../security/tool-runner';
@@ -39,6 +40,8 @@ export interface ClaudeCodeOptions {
   runner: ToolRunner;
   audit: AuditSink;
   env?: NodeJS.ProcessEnv;
+  /** Extra system-prompt text, read at the start of each session (the memory notes). */
+  extraPrompt?: () => string;
   /** Injected in tests. The SDK is ESM-only, so it's loaded with a dynamic import. */
   loadSdk?: () => Promise<Sdk>;
 }
@@ -56,6 +59,10 @@ interface Session {
   abort: AbortController;
   /** Set once the session is over, so a turn that starts just after still finds out. */
   ended?: { error?: string };
+  /** We let go of it (dispose / switchConversation): its ending is nobody's business. */
+  left?: boolean;
+  /** `init` arrived. */
+  ready?: boolean;
 }
 
 type TurnMessage = SDKMessage | { type: 'session_ended'; error?: string };
@@ -115,7 +122,7 @@ export class ClaudeCodeAgent implements AgentProvider {
         };
         return;
       }
-      session.input.push(userMessage(promptFor(input)));
+      session.input.push(userMessage(promptFor(input), input.images));
       for await (const m of turn.messages) {
         if (m.type === 'session_ended') {
           if (m.error) yield { type: 'agent_error', message: m.error, recoverable: !this.refusal };
@@ -138,9 +145,25 @@ export class ClaudeCodeAgent implements AgentProvider {
     await this.session.query.interrupt();
   }
 
+  conversationId(): string | undefined {
+    return this.sessionId;
+  }
+
+  /** End the current session; the next turn starts a new one (resuming `resumeId`, if given). */
+  async switchConversation(resumeId: string | undefined): Promise<void> {
+    await this.starting?.catch(() => undefined);
+    await this.dispose();
+    this.sessionId = resumeId;
+    // Start the new session in the background, like at app start.
+    this.ensureSession().catch((error: unknown) => console.warn('[claude-code] restart failed:', error));
+  }
+
   async dispose(): Promise<void> {
     const s = this.session;
     this.session = undefined;
+    if (s) s.left = true;
+    // A turn still waiting on this session would otherwise wait forever.
+    if (s) this.turn?.messages.push({ type: 'session_ended' });
     s?.input.close();
     s?.abort.abort();
   }
@@ -166,7 +189,11 @@ export class ClaudeCodeAgent implements AgentProvider {
       strictMcpConfig: true,
       tools: BUILTIN_TOOLS,
       includePartialMessages: true,
-      systemPrompt: { type: 'preset', preset: 'claude_code', append: PERSONALITY_PROMPT },
+      systemPrompt: {
+        type: 'preset',
+        preset: 'claude_code',
+        append: PERSONALITY_PROMPT + (this.opts.extraPrompt?.() ?? ''),
+      },
       mcpServers: { [MCP_SERVER]: this.createMcpServer(sdk) },
       hooks: { PreToolUse: [{ hooks: [this.preToolUseHook] }] },
       canUseTool: this.canUseTool,
@@ -185,7 +212,10 @@ export class ClaudeCodeAgent implements AgentProvider {
     let error: string | undefined;
     try {
       for await (const m of session.query) {
+        // A session we already left (switchConversation) mustn't change the current one.
+        if (session.left) break;
         if (m.type === 'system' && m.subtype === 'init') {
+          session.ready = true;
           const first = this.sessionId === undefined;
           this.sessionId = m.session_id;
           // The no-billing guarantee (SECURITY.md §10): anything but the subscription login stops here.
@@ -207,10 +237,12 @@ export class ClaudeCodeAgent implements AgentProvider {
       error ??=
         session.abort.signal.aborted && !this.refusal ? undefined : startupError(e, this.opts.executable);
       if (error) console.error('[claude-code] session failed:', e);
+      // A stored conversation Claude Code no longer has: start fresh next time instead of failing forever.
+      if (!session.ready && /session|conversation|not found/i.test(String(e))) this.sessionId = undefined;
     }
     session.ended = error ? { error } : {};
     if (this.session === session) this.session = undefined;
-    this.turn?.messages.push({ type: 'session_ended', ...(error ? { error } : {}) });
+    if (!session.left) this.turn?.messages.push({ type: 'session_ended', ...(error ? { error } : {}) });
   }
 
   // --- gates and tools -------------------------------------------------------------------------
@@ -272,8 +304,17 @@ export class ClaudeCodeAgent implements AgentProvider {
   }
 }
 
-function userMessage(text: string): SDKUserMessage {
-  return { type: 'user', message: { role: 'user', content: text }, parent_tool_use_id: null };
+function userMessage(text: string, images: readonly ImageAttachment[] = []): SDKUserMessage {
+  const content = images.length
+    ? [
+        ...images.map((img) => ({
+          type: 'image' as const,
+          source: { type: 'base64' as const, media_type: img.mediaType, data: img.data },
+        })),
+        { type: 'text' as const, text },
+      ]
+    : text;
+  return { type: 'user', message: { role: 'user', content }, parent_tool_use_id: null };
 }
 
 /** Menu intents become a plain request, so they take the same path as typed text. */

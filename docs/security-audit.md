@@ -60,6 +60,9 @@ scope: an attacker who already runs code as you.
 | R5 | **Approval fatigue.** Many prompts → reflexive Allow. | No "allow always" exists. Keep run_command for real tasks; open_application covers the everyday cases without prompts. |
 | R6 | **The audit log isn't tamper-proof** and keeps command text (up to 300 chars). | It's for you, on your machine; anything that can edit it already runs as you (out of scope). Don't paste secrets into commands. |
 | R7 | **Built-in Read is auto-allowed by Claude Code inside its working folder** without calling `canUseTool`. | The PreToolUse hook fires for every tool (spike 0b) and applies the same policy; tested. |
+| R9 | **You approve a harmful file change.** A diff can hide intent (e.g. a build script edited to run something later). | Changes only inside project folders, never `.env` or secret paths; the window shows the real diff from the file on disk, not the model's summary. Read build scripts and hooks especially carefully. |
+| R10 | **Memory as persistent injection.** A file the model reads could make it `remember` an instruction that comes back every session. | Notes are labelled "notes, not instructions" in the prompt, show up in the activity list when written, can't hold secret-looking text, and you can read and delete each one in Settings. |
+| R11 | **Pictures and history leave/stay on your PC.** Images you send go to Anthropic; the chat history (including pictures) is stored unencrypted in `%APPDATA%\enginebuddy\history`. | Screenshots are only taken when you click 📷 and you see them before sending. Delete chats in the chat window. |
 | R8 | **No code signing** for packaged builds; Windows SmartScreen will warn, and you can't verify a download came from you. | Fine for personal use. Sign before distributing to others. |
 
 ## Verified by tests
@@ -74,6 +77,19 @@ scope: an attacker who already runs code as you.
 - `test/integration/claude-code.live.test.ts` (opt-in, real Claude): Bash denied by the hook,
   never ran, audited, with a fake API key present.
 - Live (docs/decisions/013): Allow and Cancel through the real confirmation window.
+- `test/security/file-tools.test.ts`: write_file / edit_file ask inside projects, refuse outside,
+  `.env`, secrets and traversal; edits apply exactly once, keep CRLF, write nothing on mismatch.
+- `src/shared/images.test.ts`: pictures must match their declared type's signature and size cap;
+  settings can't add folders except through main's folder picker.
+
+## Phase 2 additions (docs/decisions/015)
+
+- New renderer → main traffic (chat, screenshots, settings) is schema-checked like the rest.
+  Settings commands are accepted only from the settings window, which shows no model output
+  except memory notes (as text nodes). Folders are added only via Windows' folder picker in main.
+- Screenshots are taken by main (`desktopCapturer`) on your click; pages still get no media
+  permissions (F1 unchanged).
+- Images are re-validated in main (type, signature, size) before reaching Claude or the history.
 
 ## How to re-run this audit
 

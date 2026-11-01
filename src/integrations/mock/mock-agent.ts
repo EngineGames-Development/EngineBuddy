@@ -72,7 +72,16 @@ const QUESTION: Step[] = [
   },
 ];
 
+const PICTURE: Step[] = [
+  { wait: 600, event: { type: 'thinking' } },
+  {
+    wait: 900,
+    stream: "Nice picture. I'm only the practice script, so I can't really see it, but Claude can.",
+  },
+];
+
 function scriptFor(input: TurnInput): Step[] {
+  if (input.images?.length) return PICTURE;
   if (input.intent === 'system_check' || /\b(pc|system|computer|cpu|ram|memory)\b/i.test(input.text))
     return SYSTEM_CHECK;
   if (/\b(run|dir|terminal|command|shell)\b/i.test(input.text)) return REFUSED_COMMAND;

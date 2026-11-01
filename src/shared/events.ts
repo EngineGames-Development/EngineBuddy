@@ -25,6 +25,14 @@ export interface ConfirmationRequest {
   target: string;
   details: string[];
   modelExplanation?: string;
+  /** For file changes: the change itself, line by line. */
+  diff?: DiffLine[];
+}
+
+/** One line of a diff. `gap` stands for unchanged lines left out; its text says how many. */
+export interface DiffLine {
+  kind: 'same' | 'add' | 'del' | 'gap';
+  text: string;
 }
 
 export type BuddyEvent =

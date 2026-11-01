@@ -65,6 +65,8 @@ export function bubbleReducer(state: BubbleState, action: BubbleAction): BubbleS
       return e.source === 'bubble' ? { ...state, pendingPrompts: [...state.pendingPrompts, e.text] } : state;
 
     case 'turn_start': {
+      // The chat window shows its own turns; popping the bubble up as well would just repeat them.
+      if (e.source === 'chat') return state;
       const fromBubble = e.source === 'bubble';
       return {
         ...initialBubble,

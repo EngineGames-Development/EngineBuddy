@@ -12,6 +12,7 @@ describe('parseSettings', () => {
       claudeExecutable: undefined,
       claudeModel: undefined,
       projectRoots: [],
+      voice: { enabled: false, voice: '', rate: 1 },
     });
     expect(parseSettings('nope')).toEqual(parseSettings({}));
   });
@@ -26,6 +27,7 @@ describe('parseSettings', () => {
       claudeExecutable: 'D:\\claude.exe',
       claudeModel: 'sonnet',
       projectRoots: ['D:\\code'],
+      voice: { enabled: true, voice: 'Microsoft Katja', rate: 1.2 },
     };
     expect(parseSettings(good)).toEqual(good);
   });

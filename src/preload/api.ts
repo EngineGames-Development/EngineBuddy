@@ -1,5 +1,7 @@
+import type { ChatPush } from '../shared/chat';
 import type { BuddyEvent } from '../shared/events';
 import { IPC_CHANNELS, type BuddyApi, type UiRequest } from '../shared/ipc';
+import type { SettingsView } from '../shared/settings-view';
 
 /** The slice of Electron's ipcRenderer the API needs. Injected so the API can be unit-tested. */
 export interface RendererIpc {
@@ -9,8 +11,15 @@ export interface RendererIpc {
 }
 
 // No validation here: main is the trust boundary and validates everything it receives.
-// This layer only maps typed method calls onto the three channels.
+// This layer only maps typed method calls onto the channels.
 export function createBuddyApi(ipc: RendererIpc): BuddyApi {
+  const subscribe =
+    <T>(channel: string) =>
+    (listener: (payload: T) => void) => {
+      const handler = (_event: unknown, payload: unknown) => listener(payload as T);
+      ipc.on(channel, handler);
+      return () => ipc.removeListener(channel, handler);
+    };
   return Object.freeze({
     onEvent(listener: (event: BuddyEvent) => void) {
       const handler = (_event: unknown, payload: unknown) => listener(payload as BuddyEvent);
@@ -22,6 +31,8 @@ export function createBuddyApi(ipc: RendererIpc): BuddyApi {
       ipc.on(IPC_CHANNELS.ui, handler);
       return () => ipc.removeListener(IPC_CHANNELS.ui, handler);
     },
+    onChat: subscribe<ChatPush>(IPC_CHANNELS.chat),
+    onSettings: subscribe<SettingsView>(IPC_CHANNELS.settings),
     send(command) {
       ipc.send(IPC_CHANNELS.command, command);
     },
@@ -45,6 +56,11 @@ export function createBuddyApi(ipc: RendererIpc): BuddyApi {
     confirm: Object.freeze({
       answer(id: string, allowed: boolean) {
         ipc.send(IPC_CHANNELS.confirm, { id, allowed });
+      },
+    }),
+    settings: Object.freeze({
+      send(command) {
+        ipc.send(IPC_CHANNELS.settingsCommand, command);
       },
     }),
   } satisfies BuddyApi);

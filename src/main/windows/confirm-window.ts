@@ -8,6 +8,8 @@ import {
 import { forwardRendererProblems, loadRenderer } from './renderer-url';
 
 const SIZE = { width: 520, height: 380 };
+/** File changes bring a diff along, which needs room to be read. */
+const DIFF_SIZE = { width: 820, height: 620 };
 
 /**
  * The confirmation window (SECURITY.md §5). A separate window owned by main: the avatar renderer,
@@ -29,13 +31,15 @@ export class ConfirmWindow implements ConfirmationPresenter {
   show(pending: PendingConfirmation): void {
     this.hide();
     const { workArea } = screen.getPrimaryDisplay();
+    const size = pending.request.diff ? DIFF_SIZE : SIZE;
     const win = new BrowserWindow({
-      ...SIZE,
-      x: Math.round(workArea.x + (workArea.width - SIZE.width) / 2),
-      y: Math.round(workArea.y + (workArea.height - SIZE.height) / 3),
+      width: Math.min(size.width, workArea.width),
+      height: Math.min(size.height, workArea.height),
+      x: Math.round(workArea.x + Math.max(0, workArea.width - size.width) / 2),
+      y: Math.round(workArea.y + Math.max(0, workArea.height - size.height) / 3),
       title: 'EngineBuddy wants to run something',
       frame: false,
-      resizable: false,
+      resizable: Boolean(pending.request.diff),
       minimizable: false,
       maximizable: false,
       fullscreenable: false,

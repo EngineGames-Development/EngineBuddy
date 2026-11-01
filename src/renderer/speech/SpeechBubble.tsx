@@ -1,5 +1,8 @@
 import { useEffect, useLayoutEffect, useReducer, useRef, useState, type FormEvent } from 'react';
+import type { ImageAttachment } from '../../shared/chat';
 import { MAX_INPUT_LENGTH } from '../../shared/commands';
+import { MAX_IMAGES } from '../../shared/images';
+import { imageFromFile, imageUrl } from '../common/images';
 import { bubbleReducer, initialBubble, type Activity } from './bubble-model';
 import { MarkdownView } from './MarkdownView';
 import { onSay } from '../avatar/greeting';
@@ -29,6 +32,7 @@ function currentWorkArea(scale: number) {
 export function SpeechBubble({ openSignal, dismissMs, scale }: Props) {
   const [state, dispatch] = useReducer(bubbleReducer, initialBubble);
   const [draft, setDraft] = useState('');
+  const [pictures, setPictures] = useState<ImageAttachment[]>([]);
   const [hover, setHover] = useState(false);
   const [side, setSide] = useState<Side>('above');
   const [width, setWidth] = useState(0);
@@ -86,10 +90,10 @@ export function SpeechBubble({ openSignal, dismissMs, scale }: Props) {
 
   // Auto-dismiss once the turn is over, unless you're pointing at it or typing.
   useEffect(() => {
-    if (!state.open || state.busy || hover || draft) return;
+    if (!state.open || state.busy || hover || draft || pictures.length) return;
     const timer = setTimeout(() => dispatch({ type: 'close' }), dismissMs);
     return () => clearTimeout(timer);
-  }, [state.open, state.busy, state.text, state.error, hover, draft, dismissMs]);
+  }, [state.open, state.busy, state.text, state.error, hover, draft, pictures, dismissMs]);
 
   // Follow the stream, unless you scrolled up to read.
   useLayoutEffect(() => {
@@ -110,10 +114,30 @@ export function SpeechBubble({ openSignal, dismissMs, scale }: Props) {
 
   const send = (e: FormEvent) => {
     e.preventDefault();
-    const text = draft.trim();
+    const text = draft.trim() || (pictures.length ? 'Look at this.' : '');
     if (!text) return;
-    window.buddy.send({ type: 'user_input', text, source: 'bubble' });
+    window.buddy.send({
+      type: 'user_input',
+      text,
+      source: 'bubble',
+      ...(pictures.length ? { images: pictures } : {}),
+    });
     setDraft('');
+    setPictures([]);
+  };
+
+  // Pictures: paste (Ctrl+V) into the input, or drop them on the bubble.
+  const addPictures = async (files: Iterable<File>) => {
+    const images = [...files].filter((f) => f.type.startsWith('image/'));
+    if (!images.length) return;
+    try {
+      const added = await Promise.all(images.map(imageFromFile));
+      setPictures((current) => [...current, ...added].slice(0, MAX_IMAGES));
+      dispatch({ type: 'open' });
+      input.current?.focus();
+    } catch {
+      dispatch({ type: 'say', text: "Couldn't read that picture.", append: false });
+    }
   };
 
   const place = placeBubble(side, width || 240, currentWorkArea(scale));
@@ -128,6 +152,11 @@ export function SpeechBubble({ openSignal, dismissMs, scale }: Props) {
       style={{ left: place.left, top: place.top, bottom: place.bottom }}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={(e) => {
+        e.preventDefault();
+        void addPictures(e.dataTransfer.files);
+      }}
     >
       {hasBody && (
         <div
@@ -159,6 +188,22 @@ export function SpeechBubble({ openSignal, dismissMs, scale }: Props) {
           {state.error && <div className="error">{state.error}</div>}
         </div>
       )}
+      {pictures.length > 0 && (
+        <div className="pictures">
+          {pictures.map((img, i) => (
+            <div key={i} className="thumb">
+              <img src={imageUrl(img)} alt="" />
+              <button
+                type="button"
+                title="Remove"
+                onClick={() => setPictures((p) => p.filter((_, j) => j !== i))}
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
       <form className="ask" onSubmit={send}>
         <input
           ref={input}
@@ -166,8 +211,26 @@ export function SpeechBubble({ openSignal, dismissMs, scale }: Props) {
           maxLength={MAX_INPUT_LENGTH}
           placeholder={state.busy ? 'Ask a follow-up…' : 'Ask EngineBuddy…'}
           onChange={(e) => setDraft(e.target.value)}
+          onPaste={(e) => {
+            const files = [...e.clipboardData.items]
+              .filter((i) => i.kind === 'file')
+              .map((i) => i.getAsFile())
+              .filter((f): f is File => f !== null);
+            if (files.some((f) => f.type.startsWith('image/'))) {
+              e.preventDefault();
+              void addPictures(files);
+            }
+          }}
           spellCheck={false}
         />
+        <button
+          type="button"
+          className="expand"
+          title="Open the chat window (history, pictures)"
+          onClick={() => window.buddy.send({ type: 'open_chat' })}
+        >
+          ⤢
+        </button>
         {state.busy && (
           <button
             type="button"

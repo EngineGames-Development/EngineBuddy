@@ -68,15 +68,28 @@ npm run dist
 | Stop an answer | The ■ button in the bubble |
 | Move it | Drag it. Drop it near a corner and it snaps there |
 | Resize it | Ctrl + mouse wheel over it |
-| Menu | Right-click: Ask, System check, Open in VS Code…, Pause/Resume, Exit |
+| Chat window | Right-click → Open chat, the ⤢ in the bubble, or the tray. Keeps your conversations |
+| Send a picture | In the chat: Ctrl+V, drag it in, or 📷 for a screenshot (the window hides for a moment) |
+| Settings | Right-click → Settings…: project folders, voice, model, memory |
+| Menu | Right-click: Ask, Open chat, System check, Open in VS Code…, Settings…, Pause/Resume, Exit |
 | Hide / pause / quit | The tray icon (left-click shows/hides it) |
 
 Things to try: "how's my PC doing?", "open a terminal in D:\code\myproject", "what's taking up space
 in my Downloads folder?" (asks before running anything).
 
+## What it can do
+
+- **Chat with history:** every conversation is saved; reopen an old one and Claude continues it.
+- **Pictures:** paste, drop or screenshot; Claude looks at them.
+- **Change files:** in your project folders, after you saw the diff and clicked Allow.
+- **Memory:** ask it to remember something; it keeps short notes across restarts (see and delete
+  them in Settings).
+- **Voice:** reads replies aloud with a Windows voice (Settings → Voice).
+- Plus system checks, opening programs, and commands (with your OK).
+
 ## Settings
 
-`%APPDATA%\enginebuddy\settings.json`. Created on first run; edit it while EngineBuddy is closed.
+Most settings are in the Settings window. They live in `%APPDATA%\enginebuddy\settings.json`. Created on first run; edit it while EngineBuddy is closed.
 
 | Setting | Default | What |
 |---|---|---|
@@ -85,6 +98,7 @@ in my Downloads folder?" (asks before running anything).
 | `claudeExecutable` | auto | Path to `claude.exe` if it isn't found automatically |
 | `claudeModel` | Claude Code's default | e.g. `"sonnet"` |
 | `bubbleDismissSeconds` | `12` | How long a reply stays up |
+| `voice` | off | `{ "enabled": true, "voice": "Microsoft Katja", "rate": 1 }` |
 | `scale`, `positions` | | Remembered size and position |
 
 Every tool request, allowed or refused, is logged in `%APPDATA%\enginebuddy\logs\` (kept 30 days).
@@ -96,6 +110,7 @@ model can be wrong or tricked (by a file it reads, say). In short:
 
 - **Safe things run directly:** system info, opening a fixed list of programs (Explorer, Terminal,
   VS Code, Notepad, Task Manager, Calculator), reading files in your project folders.
+- **File changes need your click** in the same window, which shows the exact diff.
 - **Commands need your click** in a separate window that shows the exact command, the folder, and
   EngineBuddy's reason (labelled as such). Cancel is the default; Enter never means yes; no answer
   in 2 minutes means no.

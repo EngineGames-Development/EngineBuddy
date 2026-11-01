@@ -21,7 +21,16 @@ function fakeIpc() {
 describe('window.buddy', () => {
   it('exposes exactly onEvent, send and the window methods', () => {
     const api = createBuddyApi(fakeIpc().ipc);
-    expect(Object.keys(api).sort()).toEqual(['confirm', 'onEvent', 'onUi', 'send', 'window']);
+    expect(Object.keys(api).sort()).toEqual([
+      'confirm',
+      'onChat',
+      'onEvent',
+      'onSettings',
+      'onUi',
+      'send',
+      'settings',
+      'window',
+    ]);
     expect(Object.keys(api.window).sort()).toEqual([
       'dragEnd',
       'moveBy',

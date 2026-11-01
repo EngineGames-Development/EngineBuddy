@@ -43,12 +43,12 @@ const REASONS = {
   outside: "That's outside your project folders, and for now I only read inside them.",
   envFile: "That's a .env file. Reading those will need your OK, and I can't ask for that yet.",
   shell: 'Use run_command for that instead: it shows you the exact command and asks you first.',
-  write: "I can't change files yet. That needs your OK first, and I can't ask for that until Phase 2.",
-  web: "I can't go online yet. That needs your OK first, and I can't ask for that until Phase 2.",
+  write: 'Use write_file or edit_file for that instead: they show you the change first and ask.',
+  web: "I can't go online yet.",
   unknown: "That tool isn't on my list, so no.",
   badInput: "That request didn't look right, so I didn't run it.",
   badPath: "I couldn't make sense of that path, so I left it alone.",
-  needsConfirm: "That needs your OK, and I can't ask for that until Phase 2.",
+  needsConfirm: "That needs your OK, and I can't ask for it this way.",
 } as const;
 
 // Built-in Claude Code tools. Inputs are validated loosely (Claude Code may add fields), but the

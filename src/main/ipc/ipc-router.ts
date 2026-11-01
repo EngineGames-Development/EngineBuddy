@@ -3,9 +3,11 @@ import type { z } from 'zod';
 import {
   buddyCommandSchema,
   confirmAnswerSchema,
+  settingsCommandSchema,
   windowCommandSchema,
   type BuddyCommand,
   type ConfirmAnswer,
+  type SettingsCommand,
   type WindowCommand,
 } from '../../shared/commands';
 import { IPC_CHANNELS } from '../../shared/ipc';
@@ -26,10 +28,15 @@ export interface ConfirmAnswerHandler {
   (answer: ConfirmAnswer, from: BrowserWindow): void;
 }
 
+export interface SettingsCommandHandler {
+  (command: SettingsCommand, from: BrowserWindow): void;
+}
+
 export function registerIpc(
   onCommand: CommandHandler,
   onWindowCommand: WindowCommandHandler,
   onConfirmAnswer: ConfirmAnswerHandler,
+  onSettingsCommand: SettingsCommandHandler,
 ): void {
   ipcMain.on(IPC_CHANNELS.command, (event, payload: unknown) => {
     const win = trustedSenderWindow(event, IPC_CHANNELS.command);
@@ -47,6 +54,12 @@ export function registerIpc(
     const win = trustedSenderWindow(event, IPC_CHANNELS.confirm);
     const answer = win && parseOrReject(confirmAnswerSchema, payload, IPC_CHANNELS.confirm);
     if (win && answer) onConfirmAnswer(answer, win);
+  });
+
+  ipcMain.on(IPC_CHANNELS.settingsCommand, (event, payload: unknown) => {
+    const win = trustedSenderWindow(event, IPC_CHANNELS.settingsCommand);
+    const command = win && parseOrReject(settingsCommandSchema, payload, IPC_CHANNELS.settingsCommand);
+    if (win && command) onSettingsCommand(command, win);
   });
 }
 

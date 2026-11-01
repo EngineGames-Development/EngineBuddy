@@ -210,6 +210,52 @@
   cursor: pointer;
 }
 
+.ask .expand {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid rgb(167 139 250 / 35%);
+  background: transparent;
+  color: #c4b5fd;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.pictures {
+  display: flex;
+  gap: 6px;
+  padding: 6px 8px 0;
+}
+
+.pictures .thumb {
+  position: relative;
+}
+
+.pictures img {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid rgb(167 139 250 / 35%);
+}
+
+.pictures button {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: #3b3352;
+  color: #ece9f5;
+  font-size: 11px;
+  line-height: 16px;
+  cursor: pointer;
+}
+
 .tail {
   position: absolute;
   width: 12px;

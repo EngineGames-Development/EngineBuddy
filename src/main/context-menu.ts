@@ -2,6 +2,8 @@ import { Menu, type BrowserWindow } from 'electron';
 
 export interface ContextMenuActions {
   ask(): void;
+  openChat(): void;
+  openSettings(): void;
   systemCheck(): void;
   openInVsCode(): void;
   isPaused(): boolean;
@@ -17,10 +19,12 @@ export function showContextMenu(win: BrowserWindow, actions: ContextMenuActions)
   const paused = actions.isPaused();
   Menu.buildFromTemplate([
     { label: 'Ask EngineBuddy', click: () => actions.ask(), enabled: !paused },
+    { label: 'Open chat', click: () => actions.openChat() },
     { type: 'separator' },
     { label: 'System check', click: () => actions.systemCheck(), enabled: !paused },
     { label: 'Open in VS Code…', click: () => actions.openInVsCode(), enabled: !paused },
     { type: 'separator' },
+    { label: 'Settings…', click: () => actions.openSettings() },
     { label: paused ? 'Resume' : 'Pause', click: () => actions.setPaused(!paused) },
     { label: 'Exit', click: () => actions.exit() },
   ]).popup({ window: win });

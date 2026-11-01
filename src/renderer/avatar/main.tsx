@@ -1,7 +1,9 @@
 import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { AVATAR_BOX, AVATAR_OFFSET, WINDOW_BASE } from '../../shared/layout';
+import type { VoiceSettings } from '../../shared/settings-view';
 import { SpeechBubble } from '../speech/SpeechBubble';
+import { speak, stopSpeaking } from '../speech/voice';
 import { Avatar } from './Avatar';
 import { playGreeting } from './greeting';
 import { installWindowInteraction } from './window-interaction';
@@ -41,7 +43,44 @@ function markGreeted(): void {
   console.info(`[avatar] greeting shown ${ms} ms after app start`);
 }
 
+/** Read each finished reply aloud when the voice is on (Settings → Voice). */
+function useVoice(): void {
+  useEffect(() => {
+    let voice: VoiceSettings | undefined;
+    let turnId: string | undefined;
+    let text = '';
+    const offUi = window.buddy.onUi((request) => {
+      if (request.type !== 'voice') return;
+      voice = request.voice;
+      if (!voice.enabled) stopSpeaking();
+    });
+    const offEvents = window.buddy.onEvent((e) => {
+      if (e.type === 'turn_start') {
+        stopSpeaking();
+        turnId = e.turnId;
+        text = '';
+      } else if (e.type === 'message_delta' && e.turnId === turnId) {
+        text += e.text;
+      } else if (e.type === 'message' && e.turnId === turnId && !text.trimEnd().endsWith(e.text.trim())) {
+        text = `${text} ${e.text}`;
+      } else if (e.type === 'turn_end' && e.turnId === turnId) {
+        if (e.outcome === 'ok' && voice?.enabled) speak(text, voice);
+        else stopSpeaking();
+        turnId = undefined;
+      } else if (e.type === 'mode_changed' && e.mode === 'sleep') {
+        stopSpeaking();
+      }
+    });
+    return () => {
+      offUi();
+      offEvents();
+      stopSpeaking();
+    };
+  }, []);
+}
+
 function AvatarApp() {
+  useVoice();
   const scale = useWindowScale();
   const [openSignal, setOpenSignal] = useState(0);
   useEffect(() => installWindowInteraction({ onAvatarClick: () => setOpenSignal((n) => n + 1) }), []);
