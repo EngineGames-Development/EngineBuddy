@@ -151,3 +151,47 @@ li.none {
   align-self: center;
   padding: 2px 8px;
 }
+
+/* Setup assistant: first thing you see until the free brain is ready. */
+section.setup {
+  border-color: #7c5cd6;
+  background: #211a33;
+}
+
+section.setup h3 {
+  margin: 4px 0 0;
+  font-size: 13.5px;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+button.primary {
+  background: #7c5cd6;
+  border-color: #9a7cf0;
+}
+
+button.primary:hover {
+  background: #8b6be5;
+}
+
+.pull {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pull progress {
+  flex: 1;
+  accent-color: #a78bfa;
+}
+
+.error {
+  margin: 0;
+  color: #f87171;
+  font-size: 12.5px;
+}

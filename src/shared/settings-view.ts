@@ -6,6 +6,23 @@ import type { Lang, LanguagePref } from './i18n';
 export const AGENTS = ['ollama', 'mock'] as const;
 export type AgentKind = (typeof AGENTS)[number];
 
+/** Models the setup assistant offers: Qwen3 (Apache 2.0), reliable with tools. */
+export const SETUP_MODELS = ['qwen3:4b', 'qwen3:8b', 'qwen3:14b'] as const;
+export type SetupModel = (typeof SETUP_MODELS)[number];
+
+/** The first-run assistant: is the free brain ready, and if not, what's missing. */
+export interface SetupView {
+  /** Ollama answers on this PC. */
+  ollama: boolean;
+  /** The model in Settings is downloaded. */
+  modelReady: boolean;
+  recommended: SetupModel;
+  /** Total RAM in GB, rounded, for the recommendation text. */
+  ramGb: number;
+  pulling?: { model: SetupModel; status: string; percent?: number };
+  error?: string;
+}
+
 export interface VoiceSettings {
   /** Read replies aloud. */
   enabled: boolean;
@@ -34,6 +51,7 @@ export interface SettingsView {
   /** The language "system" resolves to right now. */
   systemLanguage: Lang;
   memories: MemoryEntry[];
+  setup: SetupView;
   /** Something changed that only takes effect after a restart (agent, model, folders). */
   restartNeeded: boolean;
 }

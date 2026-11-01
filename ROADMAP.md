@@ -21,9 +21,11 @@ speech input (Phase 7), other platforms (Phase 8).
 
 ### Next small steps
 
-- Live-test tool calling with `qwen3:8b`, and show a hint in Settings when the chosen model can't
-  use tools (Ollama's `/api/show` lists capabilities).
-- A model picker that lists what's installed in Ollama, with a "download" button.
+- Microsoft Store: account, name reservation, identity values, first submission
+  (docs/store/ANLEITUNG.md).
+- Code signing for the GitHub downloads via the SignPath Foundation (free for open source).
+- Show a hint in Settings when the chosen model can't use tools (Ollama's `/api/show` lists
+  capabilities); offer newer model families in the setup assistant as they appear.
 - More legal search sources with open APIs (e.g. Wikidata, MDN, npm, PyPI, GitHub's public API).
 - Translate tool texts too: activity lines ("Reading nodejs.org") and confirmation details are still English.
 - Switch language live, without a restart; clear the restart banner when a setting is changed back.

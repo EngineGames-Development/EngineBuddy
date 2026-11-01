@@ -16,6 +16,7 @@
     "test:watch": "vitest",
     "check": "npm run typecheck && npm run lint && npm run format:check && npm test",
     "dist": "npm run build && electron-builder --win",
+    "dist:store": "npm run build && electron-builder --win appx --publish never",
     "icon": "node scripts/make-icon.mjs"
   },
   "engines": {

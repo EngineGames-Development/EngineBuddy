@@ -3,7 +3,7 @@
 // schemas before acting on it. Unknown types and unknown keys are rejected, not stripped.
 import { z } from 'zod';
 import { LANGUAGE_PREFS } from './i18n';
-import { AGENTS } from './settings-view';
+import { AGENTS, SETUP_MODELS } from './settings-view';
 import { MAX_IMAGES, imageSchema } from './images';
 
 /** Long enough for a pasted stack trace, short enough that a runaway renderer can't flood main. */
@@ -95,6 +95,11 @@ export const settingsCommandSchema = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal('forget'), id }),
   z.strictObject({ type: z.literal('forget_all') }),
   z.strictObject({ type: z.literal('restart') }),
+  /** Setup assistant: check again, open ollama.com in the browser, download a model, stop it. */
+  z.strictObject({ type: z.literal('setup_check') }),
+  z.strictObject({ type: z.literal('setup_get_ollama') }),
+  z.strictObject({ type: z.literal('setup_pull'), model: z.enum(SETUP_MODELS) }),
+  z.strictObject({ type: z.literal('setup_cancel') }),
 ]);
 
 export type SettingsCommand = z.infer<typeof settingsCommandSchema>;

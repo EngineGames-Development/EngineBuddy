@@ -1,0 +1,30 @@
+# The Microsoft Store package (.appx), for uploading in Partner Center. Runs on every version tag,
+# or by hand (Actions → Store package → Run workflow). Kept apart from the release, so a Store
+# problem never blocks the normal downloads. The package isn't published anywhere: the Store signs
+# it after you upload it.
+name: Store package
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  appx:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run dist:store
+      - uses: actions/upload-artifact@v4
+        with:
+          name: store-package
+          path: release/EngineBuddy-*.appx
+          if-no-files-found: error

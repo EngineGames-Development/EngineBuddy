@@ -4,7 +4,12 @@
 import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { SettingsCommand } from '../../shared/commands';
-import type { SettingsView, VoiceSettings } from '../../shared/settings-view';
+import {
+  SETUP_MODELS,
+  type SettingsView,
+  type SetupView,
+  type VoiceSettings,
+} from '../../shared/settings-view';
 import { LANGUAGE_NAMES, LANGUAGES, type LanguagePref } from '../../shared/i18n';
 import { t } from '../common/i18n';
 import { speak } from '../speech/voice';
@@ -21,6 +26,63 @@ function useVoices(): SpeechSynthesisVoice[] {
     return () => speechSynthesis.removeEventListener('voiceschanged', read);
   }, []);
   return voices;
+}
+
+function Setup({ setup }: { setup: SetupView }) {
+  const { pulling } = setup;
+  return (
+    <section className="setup">
+      <h2>{t('setup.title')}</h2>
+      <p className="help">{t('setup.intro')}</p>
+
+      <h3>{setup.ollama ? t('setup.step1Done') : t('setup.step1')}</h3>
+      {!setup.ollama && (
+        <div className="row">
+          <button className="primary" onClick={() => send({ type: 'setup_get_ollama' })}>
+            {t('setup.getOllama')}
+          </button>
+          <button onClick={() => send({ type: 'setup_check' })}>{t('setup.checkAgain')}</button>
+        </div>
+      )}
+
+      {setup.ollama && (
+        <>
+          <h3>{t('setup.step2')}</h3>
+          {pulling ? (
+            <div className="pull">
+              <progress max={100} value={pulling.percent ?? 0} />
+              <span>
+                {t('setup.downloading', {
+                  model: pulling.model,
+                  percent: pulling.percent !== undefined ? `${pulling.percent}%` : '',
+                })}
+              </span>
+              <button onClick={() => send({ type: 'setup_cancel' })}>{t('setup.cancel')}</button>
+            </div>
+          ) : (
+            <>
+              <p className="help">{t('setup.recommend', { ram: setup.ramGb, model: setup.recommended })}</p>
+              <div className="row">
+                <button
+                  className="primary"
+                  onClick={() => send({ type: 'setup_pull', model: setup.recommended })}
+                >
+                  {t('setup.download', { model: setup.recommended })}
+                </button>
+                <span className="help">{t('setup.other')}</span>
+                {SETUP_MODELS.filter((m) => m !== setup.recommended).map((m) => (
+                  <button key={m} onClick={() => send({ type: 'setup_pull', model: m })}>
+                    {m}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </>
+      )}
+      {setup.error && <p className="error">{setup.error}</p>}
+    </section>
+  );
 }
 
 function Settings() {
@@ -49,6 +111,10 @@ function Settings() {
           <span>{t('settings.restart')}</span>
           <button onClick={() => send({ type: 'restart' })}>{t('settings.restartNow')}</button>
         </div>
+      )}
+
+      {view.agent === 'ollama' && (!view.setup.ollama || !view.setup.modelReady) && (
+        <Setup setup={view.setup} />
       )}
 
       <section>

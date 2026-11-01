@@ -9,7 +9,9 @@ import { IPC_CHANNELS, type UiRequest } from '../shared/ipc';
 import { resolveLang, translator } from '../shared/i18n';
 import type { SettingsView } from '../shared/settings-view';
 import { MemoryStore } from '../tools/memory/memory';
-import { setUpAgent } from './agent-setup';
+import { ollamaBaseUrl, setUpAgent } from './agent-setup';
+import { OLLAMA_DEFAULT_MODEL } from '../integrations/ollama/ollama-agent';
+import { SetupAssistant } from './setup-assistant';
 import { showContextMenu } from './context-menu';
 import { ConversationStore } from './history/conversation-store';
 import { broadcastEvent } from './ipc/broadcast';
@@ -95,6 +97,11 @@ if (!app.requestSingleInstanceLock()) {
       const start =
         last && provider.switchConversation ? provider.switchConversation(last) : provider.prewarm?.();
       start?.catch((error: unknown) => console.warn('[main] prewarm failed:', error));
+      // Not set up yet (no Ollama, or no model): open the assistant instead of failing on the first question.
+      if (settings.get().agent === 'ollama')
+        void setupAssistant.check().then(() => {
+          if (!setupAssistant.ready) settingsWindow.open();
+        });
     });
 
     // Chat and settings: ordinary windows, opened from the menu, the tray or the bubble.
@@ -128,6 +135,19 @@ if (!app.requestSingleInstanceLock()) {
     };
 
     let restartNeeded = false;
+    // First-run assistant (Settings → Setup): Ollama and the model, so EngineBuddy works right away.
+    const setupAssistant = new SetupAssistant({
+      baseUrl: ollamaBaseUrl(settings.get()),
+      model: () => settings.get().ollamaModel || OLLAMA_DEFAULT_MODEL,
+      onModelReady: (model) => {
+        const before = settings.get();
+        settings.update({ agent: 'ollama', ollamaModel: model });
+        if (before.agent !== 'ollama' || (before.ollamaModel || OLLAMA_DEFAULT_MODEL) !== model)
+          restartNeeded = true;
+      },
+      onChange: () => pushSettings(),
+      failed: (why) => t('setup.failed', { why }),
+    });
     const settingsView = (): SettingsView => {
       const s = settings.get();
       return {
@@ -140,6 +160,7 @@ if (!app.requestSingleInstanceLock()) {
         language: s.language,
         systemLanguage: resolveLang('system', systemLocale),
         memories: [...memory.list()],
+        setup: setupAssistant.view(),
         restartNeeded,
       };
     };
@@ -266,6 +287,18 @@ if (!app.requestSingleInstanceLock()) {
           break;
         case 'forget_all':
           memory.clear();
+          break;
+        case 'setup_check':
+          await setupAssistant.check();
+          break;
+        case 'setup_get_ollama':
+          setupAssistant.getOllama();
+          break;
+        case 'setup_pull':
+          void setupAssistant.pull(command.model);
+          break;
+        case 'setup_cancel':
+          setupAssistant.cancel();
           break;
         case 'restart':
           settings.flush();

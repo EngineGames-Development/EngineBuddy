@@ -42,3 +42,16 @@ nsis:
 
 portable:
   artifactName: EngineBuddy-${version}-portable.${ext}
+
+# Microsoft Store package: `npm run dist:store` → release/EngineBuddy-<version>.appx. The Store signs
+# it, so no SmartScreen warning. The three identity values come from Partner Center (Product
+# identity page) once the app name is reserved; until then these placeholders build a test package.
+appx:
+  identityName: EngineGamesDevelopment.EngineBuddy
+  publisher: CN=00000000-0000-0000-0000-000000000000
+  publisherDisplayName: EngineGames-Development
+  applicationId: EngineBuddy
+  displayName: EngineBuddy
+  backgroundColor: '#14111c'
+  languages: [en-US, de-DE, fr-FR, es-ES]
+  artifactName: EngineBuddy-${version}.${ext}

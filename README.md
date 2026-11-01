@@ -30,7 +30,9 @@ your PC is doing, open programs and folders, and run commands, but only after yo
   `qwen3:4b`. Very small models (1–2 B) often can't use tools properly. Pick the model in
   Settings → Brain.
 
-  Without Ollama, EngineBuddy still starts, says what's missing, and has a practice script for
+  You don't have to do this by hand: on first start EngineBuddy opens a **setup assistant**
+  (Settings → Get started) with a button to get Ollama and one to download the right model for
+  your PC, with a progress bar. Without Ollama it still starts, and has a practice script for
   trying the windows.
 
 ## Install
@@ -161,6 +163,8 @@ Details: [SECURITY.md](SECURITY.md) (the permission model) and
   browser's (your IP address, the page asked for). Nothing else is sent.
 - Screenshots are only taken when you click 📷, and you see them before sending. Only send
   pictures of other people or of others' content if you're allowed to.
+
+Privacy policy: [PRIVACY.md](PRIVACY.md).
 
 ## License
 

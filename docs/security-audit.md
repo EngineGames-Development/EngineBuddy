@@ -77,6 +77,18 @@ scope: an attacker who already runs code as you.
 | R14 | **Web pages are untrusted text.** What the model reads online can try to steer it. | The prompt says so explicitly; everything with an effect (commands, file changes) still needs your click, and memory notes can't hold links or overrides (F13). |
 | R8 | **No code signing** for packaged builds; Windows SmartScreen will warn, and you can't verify a download came from you. | Fine for personal use. Sign before distributing to others. |
 
+## Setup assistant and Store package (docs/decisions/018)
+
+- The assistant lives in the settings window, so it inherits that channel's rule: main accepts
+  its commands only from the settings window. `setup_pull` takes a model from a fixed list
+  (`SETUP_MODELS`, zod enum); `setup_get_ollama` takes no input and opens one fixed URL
+  (ollama.com/download/windows) in the browser. EngineBuddy never downloads or runs an installer:
+  the user installs Ollama, and models are pulled by Ollama itself on loopback.
+- The Store package (`appx`) is built in its own workflow and only uploaded as a workflow
+  artifact; it installs only after the Store signs it.
+- PRIVACY.md states what is stored and what leaves the PC (only web requests the user's questions
+  cause, when Internet is on).
+
 ## 0.4.0: local only, no grey zones (docs/decisions/017)
 
 - **Claude Code and the Agent SDK were removed.** Anthropic's Agent SDK docs say third-party apps

@@ -24,6 +24,11 @@ import {
 import { LANGUAGE_NAMES, translator, type Lang } from '../shared/i18n';
 import type { Settings } from './settings/schema';
 
+/** Ollama's address: the configured one if it's on this PC, else the default. */
+export function ollamaBaseUrl(settings: Readonly<Settings>): string {
+  return settings.ollamaUrl && isLoopbackUrl(settings.ollamaUrl) ? settings.ollamaUrl : OLLAMA_DEFAULT_URL;
+}
+
 export interface AgentSetup {
   provider: AgentProvider;
   registry: ToolRegistry;
@@ -91,8 +96,7 @@ export function setUpAgent(
 
   const provider = new OllamaAgent({
     // Only loopback: the conversation stays on this PC.
-    baseUrl:
-      settings.ollamaUrl && isLoopbackUrl(settings.ollamaUrl) ? settings.ollamaUrl : OLLAMA_DEFAULT_URL,
+    baseUrl: ollamaBaseUrl(settings),
     model: settings.ollamaModel || OLLAMA_DEFAULT_MODEL,
     registry,
     runner,
