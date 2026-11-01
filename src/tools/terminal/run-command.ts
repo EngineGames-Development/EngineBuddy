@@ -24,6 +24,11 @@ export interface RunCommandOptions {
   /** Decides if a command is blocked outright. Injected from security, which tools can't import. */
   classify: (command: string) => { blocked: boolean; reason?: string };
   systemRoot?: string;
+  /**
+   * The environment commands run with. Main passes one without billing variables
+   * (docs/security-audit.md, F4). Defaults to ours, minus ELECTRON_RUN_AS_NODE either way.
+   */
+  env?: () => Record<string, string>;
 }
 
 function powershellPath(systemRoot: string): string {
@@ -38,6 +43,11 @@ function killTree(pid: number | undefined): void {
 
 export function createRunCommand(opts: RunCommandOptions): ToolDef<typeof input.shape> {
   const systemRoot = opts.systemRoot ?? process.env['SystemRoot'] ?? 'C:\\Windows';
+  const childEnv = () => {
+    const env: Record<string, string> = { ...(opts.env?.() ?? (process.env as Record<string, string>)) };
+    delete env['ELECTRON_RUN_AS_NODE'];
+    return env;
+  };
   return {
     name: 'run_command',
     category: 'terminal',
@@ -75,7 +85,7 @@ export function createRunCommand(opts: RunCommandOptions): ToolDef<typeof input.
         const child = spawn(
           powershellPath(systemRoot),
           ['-NoLogo', '-NoProfile', '-NonInteractive', '-Command', UTF8_PREFIX + command],
-          { cwd: dir, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] },
+          { cwd: dir, env: childEnv(), windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] },
         );
         let stdout = '';
         let stderr = '';

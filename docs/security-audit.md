@@ -1,0 +1,84 @@
+# EngineBuddy — Security audit
+
+Date: 2026-11-01 · Scope: everything on `main` up to and including the confirmation window
+(docs/decisions/013) · Method: code review of every trust boundary, plus the automated and live
+tests named below. This is a self-review by the same assistant that wrote the code, not an
+independent audit; treat it as a checklist, and get a second pair of eyes before trusting it with
+anything important.
+
+## Summary
+
+| | Count |
+|---|---|
+| Fixed during this audit | 4 (F1–F4) |
+| Fixed in the GitHub-readiness step | 3 (F5, F7, F8; see "Status" column) |
+| Accepted residual risks, documented | 8 (R1–R8) |
+| Tests guarding security behaviour | ~110 of 205 |
+
+No finding allowed the model to run a command, change a file or read a secret without your click.
+The most serious ones (F3, F4) needed a crafted folder name or a command you approved yourself.
+
+## Threat model (short)
+
+From SECURITY.md §1: **the model can be wrong and can be manipulated** (prompt injection from a
+README, a file, a command's output). The renderer shows model output, so it's untrusted too. Out of
+scope: an attacker who already runs code as you.
+
+## Trust boundaries reviewed
+
+| Boundary | Controls | Verdict |
+|---|---|---|
+| Model → tools | Default-deny PolicyEngine; PreToolUse hook + canUseTool + ToolRunner re-check; strict input schemas; path normalisation (realpath, 8.3, junctions, UNC, ADS); secret-path denylist; escalate-only command classifier; CONFIRM via a window the model can't reach | ✅ |
+| Renderer → main | contextIsolation, sandbox, no nodeIntegration; frozen 4-method preload API; sender-frame check; strict zod schemas; confirmation answers only from the window showing that request | ✅ |
+| Confirmation UI | Separate main-owned window, literal command from validated input, model's reason labelled, Cancel default, Enter never allows, 500 ms Allow delay enforced in main, 2 min timeout → no, close → no | ✅ |
+| Claude Code config | `settingSources: []`, `strictMcpConfig`, explicit tool list, no `allowedTools`; your own Claude settings and connectors can't pre-allow anything | ✅ |
+| Billing | Billing env vars stripped for Claude Code **and** for approved commands (F4); `apiKeySource` must be `none` or the session is aborted | ✅ |
+| Electron shell | CSP; navigation, popups, `<webview>` denied; permission requests denied (F1); no app menu (F2); fuses (F5) | ✅ after fixes |
+| Child processes | Executable + argument array everywhere, no shell except PowerShell for approved commands; process tree killed on timeout/cancel; ELECTRON_RUN_AS_NODE removed | ✅ after F3 |
+| Data at rest | Settings (no secrets), audit log (inputs redacted by key name, strings cut at 300 chars) | ⚠️ R6 |
+
+## Findings
+
+| ID | Severity | Finding | Fix | Status |
+|---|---|---|---|---|
+| F1 | Medium | Electron grants permission requests (camera, microphone, geolocation, notifications…) by default. A compromised renderer could have asked for the microphone. | `setPermissionRequestHandler` and `setPermissionCheckHandler` deny everything (`src/main/index.ts`) | Fixed |
+| F2 | Low | The default application menu stayed active: Ctrl+Shift+I opened DevTools and Ctrl+R reloaded any window, including the confirmation window. | `Menu.setApplicationMenu(null)` | Fixed |
+| F3 | Medium | `open_application` (SAFE, no click): Windows Terminal treats `;` in its arguments as a command separator, and Explorer splits arguments on commas. A folder named e.g. `x; new-tab cmd /c …` (from a cloned repo, say) could have turned "open a terminal here" into running a command. | Folders containing `;` or `,` are refused for these apps; test added | Fixed |
+| F4 | Medium | Approved commands inherited EngineBuddy's whole environment, including any `ANTHROPIC_API_KEY`: an approved command could print it into the conversation, or run `claude` billed per request. | `run_command` gets the subscription-only environment; `ELECTRON_RUN_AS_NODE` removed; test added | Fixed |
+| F5 | Medium | Electron fuses not set (SECURITY.md §7): a packaged build would honour `ELECTRON_RUN_AS_NODE`, `NODE_OPTIONS` and `--inspect`, letting anyone who can start it run arbitrary Node code as the app. | Set fuses at packaging time | Fixed in the GitHub step |
+| F7 | Low | Recorded transcripts in the repo contain local paths (app install ID, session folder names), CPU model and RAM size. | Scrubbed before publishing; spikes removed | Fixed in the GitHub step |
+| F8 | Info | Every commit's author email (`LeanderGamer2@web.de`) becomes public on push. | Documented in README; your call whether to rewrite or use GitHub's no-reply address | Your decision |
+
+## Accepted residual risks
+
+| ID | Risk | Why it's accepted / mitigation |
+|---|---|---|
+| R1 | **You approve a harmful command.** Prompt injection can make the model ask for something that looks reasonable. | That's what the window is for: it shows the literal command, not the model's description. The classifier blocks the worst categories even with a click. Read the command, not the reason. |
+| R2 | **The classifier can be bypassed** (aliases, string building, `& (gcm ...)`). | It's only an extra stop, never the gate. Anything it misses still needs your click. Obfuscated-looking commands are themselves a reason to say no. |
+| R3 | **Output of approved commands goes to Anthropic** as part of the conversation (e.g. `Get-ChildItem env:` would send your environment). | Inherent to having a model read the result. The confirmation shows what will run; ask yourself what it prints. |
+| R4 | **Files inside project roots are readable without asking**, including config files with tokens (only `.env*`, key files and known secret folders are excluded). | Project roots are your choice (`projectRoots`; default is an empty workspace). Don't add folders that hold secrets. |
+| R5 | **Approval fatigue.** Many prompts → reflexive Allow. | No "allow always" exists. Keep run_command for real tasks; open_application covers the everyday cases without prompts. |
+| R6 | **The audit log isn't tamper-proof** and keeps command text (up to 300 chars). | It's for you, on your machine; anything that can edit it already runs as you (out of scope). Don't paste secrets into commands. |
+| R7 | **Built-in Read is auto-allowed by Claude Code inside its working folder** without calling `canUseTool`. | The PreToolUse hook fires for every tool (spike 0b) and applies the same policy; tested. |
+| R8 | **No code signing** for packaged builds; Windows SmartScreen will warn, and you can't verify a download came from you. | Fine for personal use. Sign before distributing to others. |
+
+## Verified by tests
+
+- `test/security/policy-engine.test.ts`: the policy table; 12 secret paths; traversal, mixed
+  case, junction, 8.3, UNC, `\\?\`, ADS, unknown variable; negative cases.
+- `test/security/confirmations.test.ts`: 22 blocked commands, 8 allowed-to-ask; app plans; broker
+  (Allow delay, timeout, wrong id, queue, deny-all, cancel); run_command runs only after Allow
+  (real PowerShell), not on No, blocked never shown; F3, F4.
+- `test/integrations/claude-code.test.ts`: billing env stripped, `apiKeySource` refusal, both gates.
+- `test/lint/boundaries.test.ts`: core/renderer can't import Electron, Node or main.
+- `test/integration/claude-code.live.test.ts` (opt-in, real Claude): Bash denied by the hook,
+  never ran, audited, with a fake API key present.
+- Live (docs/decisions/013): Allow and Cancel through the real confirmation window.
+
+## How to re-run this audit
+
+1. `npm run check` (all of the above except the live test).
+2. `EB_INTEGRATION=1 npx vitest run test/integration` (uses your subscription, one short turn).
+3. Re-read this file's boundary table against `git diff` since the date above; anything touching
+   `src/security`, `src/main/ipc`, `src/preload`, `src/tools` or the confirmation window needs a
+   new entry here.

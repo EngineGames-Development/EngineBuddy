@@ -97,6 +97,14 @@ export function createOpenApplication(
         return { permission: 'BLOCKED', reason: `${LABELS[app]} doesn't open folders.` };
       if (folder && ctx.isSecretPath(folder))
         return { permission: 'BLOCKED', reason: "Not opening that. It's where secrets live." };
+      // Windows Terminal treats `;` in its arguments as a command separator, and Explorer splits on
+      // commas, so a crafted folder name could smuggle in a command (docs/security-audit.md, F3).
+      if (folder && /[;,]/.test(folder))
+        return {
+          permission: 'BLOCKED',
+          reason:
+            'That folder name has a ; or , in it, which these programs would misread. Open it another way.',
+        };
       return { permission: 'SAFE' };
     },
     activity: ({ app }) => `Opening ${LABELS[app]}`,

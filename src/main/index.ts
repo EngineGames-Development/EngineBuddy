@@ -1,5 +1,5 @@
 import { join } from 'node:path';
-import { app, dialog } from 'electron';
+import { Menu, app, dialog, session } from 'electron';
 import { AgentController } from '../core/agent/agent-controller';
 import { EventBus } from '../core/events/event-bus';
 import { localToolTurn } from '../integrations/local/local-tool-turn';
@@ -42,7 +42,16 @@ if (!app.requestSingleInstanceLock()) {
   app.on('web-contents-created', (_event, contents) => hardenWebContents(contents));
   app.on('window-all-closed', () => app.quit());
 
+  // No application menu: its default accelerators (Ctrl+Shift+I DevTools, Ctrl+R reload) would
+  // work in every window (docs/security-audit.md, F2).
+  Menu.setApplicationMenu(null);
+
   void app.whenReady().then(() => {
+    // Our pages never need the camera, microphone, location, notifications, etc. Electron grants
+    // such requests by default; deny them all (docs/security-audit.md, F1).
+    session.defaultSession.setPermissionRequestHandler((_wc, _permission, callback) => callback(false));
+    session.defaultSession.setPermissionCheckHandler(() => false);
+
     const sinceStart = () => `${Math.round(process.uptime() * 1000)} ms after start`;
     console.log(`[main] ready ${sinceStart()}`);
     const settings = new SettingsStore(join(app.getPath('userData'), 'settings.json'));

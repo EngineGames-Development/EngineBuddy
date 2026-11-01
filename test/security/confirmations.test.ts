@@ -280,6 +280,49 @@ describe('run_command through the runner', () => {
   });
 });
 
+describe('audit fixes', () => {
+  it('F3: folder names with ; or , are refused for open_application', () => {
+    const registry = new ToolRegistry([createOpenApplication(async () => {})]);
+    const policy = new PolicyEngine({
+      registry,
+      secrets: new SecretPaths(env),
+      env,
+      projectRoots: [],
+      cwd: tmp,
+    });
+    for (const folder of ['D:\\repo\\x; new-tab cmd /c calc', 'D:\\a,b']) {
+      expect(
+        policy.evaluate('mcp__enginebuddy__open_application', { app: 'terminal', folder }),
+      ).toMatchObject({
+        permission: 'BLOCKED',
+      });
+    }
+  });
+
+  it('F6: approved commands run without billing variables', async () => {
+    const tool = createRunCommand({
+      defaultCwd: tmp,
+      classify: () => ({ blocked: false }),
+      env: () => ({ ...(process.env as Record<string, string>), ANTHROPIC_API_KEY: '' }),
+    });
+    const withKey = { ...process.env, ANTHROPIC_API_KEY: 'sk-ant-fake', ELECTRON_RUN_AS_NODE: '1' };
+    const saved = { ...process.env };
+    Object.assign(process.env, withKey);
+    try {
+      const out = await tool.execute(
+        { command: 'Write-Output "[$env:ANTHROPIC_API_KEY][$env:ELECTRON_RUN_AS_NODE]"', reason: 'test' },
+        new AbortController().signal,
+      );
+      expect((out.data as { stdout: string }).stdout.trim()).toBe('[][]');
+    } finally {
+      for (const k of ['ANTHROPIC_API_KEY', 'ELECTRON_RUN_AS_NODE']) {
+        if (saved[k] === undefined) delete process.env[k];
+        else process.env[k] = saved[k];
+      }
+    }
+  }, 30_000);
+});
+
 describe('confirm answer schema', () => {
   it('accepts a well-formed answer only', () => {
     expect(confirmAnswerSchema.safeParse({ id: 'c1-abc123', allowed: true }).success).toBe(true);

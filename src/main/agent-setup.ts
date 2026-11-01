@@ -5,7 +5,7 @@ import { app } from 'electron';
 import type { AgentProvider } from '../core/agent/agent-provider';
 import type { ToolRegistry } from '../core/tools/tool-def';
 import { ClaudeCodeAgent } from '../integrations/claude-code/claude-code-agent';
-import { locateClaude } from '../integrations/claude-code/environment';
+import { locateClaude, subscriptionOnlyEnv } from '../integrations/claude-code/environment';
 import { MockAgent } from '../integrations/mock/mock-agent';
 import { AuditLog } from '../security/audit/audit-log';
 import type { ConfirmationBroker } from '../security/confirmations/confirmation-broker';
@@ -50,6 +50,8 @@ export function setUpAgent(settings: Readonly<Settings>, broker: ConfirmationBro
     defaultCwd: cwd,
     classify: classifyCommand,
     systemRoot: env.systemRoot,
+    // Approved commands don't get API keys or billing switches either (SECURITY.md §10).
+    env: () => subscriptionOnlyEnv(process.env),
   });
   const audit = new AuditLog(join(userData, 'logs'));
   const policy = new PolicyEngine({ registry, secrets: new SecretPaths(env), env, projectRoots: roots, cwd });
