@@ -17,7 +17,7 @@ EngineBuddy is an LLM with hands on your PC. The design assumption throughout is
 | Secret exfiltration | The model reads `%APPDATA%\…\Login Data` or `~/.ssh/id_ed25519`, then sends it out with WebFetch | Secret-path denylist (BLOCKED, not CONFIRM); network tools CONFIRM |
 | Renderer compromise | Malicious Markdown/HTML in a response tries to run script in the UI | Sandboxed renderer, no raw HTML, CSP, a narrow preload API |
 | Confirmation spoofing | The model's text in the bubble looks like an "Allow" prompt | Real confirmations live only in a separate window owned by main, with a fixed visual frame |
-| Policy bypass through config | Your global Claude Code settings pre-allow `Bash(*)`, so our callback never runs | `settingSources: []`, plus a second `PreToolUse` gate, plus a test that asserts denial |
+| Policy bypass | A tool call reaches a tool without the PolicyEngine | One path only: every call goes through the ToolRunner (policy → confirm → execute → audit); tested |
 | Persistence abuse | Agent adds a Run-key autostart entry or a scheduled task | System-settings tools are CONFIRM; autostart is an app setting that only the user can toggle |
 
 Out of scope: an attacker who already has code execution as your user. EngineBuddy can't defend against that, and it shouldn't pretend to.
@@ -54,7 +54,8 @@ input, after zod parsing and after path normalisation.
 | `delete_file` | CONFIRM | Moves to the Recycle Bin (`shell.trashItem`); never a hard delete |
 | `run_command`, Bash | CONFIRM | Shows the exact command line, cwd and environment changes |
 | Package installs (`npm i`, `cargo add`, `pip`, `winget`) | CONFIRM | Flagged as "installs software" |
-| WebSearch / WebFetch | SAFE while Settings → Internet is on, else BLOCKED | Public http(s) only: no local/private addresses, no logins in URLs, no data-smuggling-shaped URLs (§11) |
+| read_web_page / search_wikipedia | SAFE while Settings → Internet is on, else BLOCKED | Public http(s) only, resolved and re-checked on every redirect (§11) |
+| read_file / list_files | SAFE in project folders; secret paths, `.env`, `.git` BLOCKED | |
 | Browser automation | CONFIRM | Shows the URL |
 | `close_application` / kill process | CONFIRM | |
 | System settings (registry, services, firewall, power, autostart entries) | CONFIRM, *and* off by default behind a settings toggle | |
@@ -95,11 +96,10 @@ PolicyEngine.evaluate(tool, input, ctx)  ──► BLOCKED ──► deny + frie
 audit log (always, including denials)
 ```
 
-There are two gates on the Claude Code path. Both call the same PolicyEngine, and if either
-denies, the tool doesn't run. The **`PreToolUse` hook is the primary gate**: spike 0b showed it fires
-for every tool, while `canUseTool` is skipped for read-only tools that Claude Code auto-allows
-in `cwd`. `canUseTool` is the second gate. An integration test
-sends a real `Bash` request from the agent and asserts it was denied and logged.
+Since 0.4.0 there is one path: the local model's tool calls go straight to the ToolRunner, which
+asks the PolicyEngine before every call (the two Claude Code gates of 0.1–0.3 are gone with Claude
+Code). Unknown tools, including the old built-ins (Bash, WebFetch, …), are default-deny; tests
+send them through the OllamaAgent and assert they were refused and logged.
 
 ### Shell command classification (`run_command`, `src/security/policy/command-classifier.ts`)
 
@@ -178,26 +178,24 @@ This is a personal project. Security issues go in the issue tracker, labelled `s
 
 ---
 
-## 10. No-billing guarantee
+## 10. Free and local (no billing, no cloud AI)
 
-EngineBuddy must never cause a per-request charge (ARCHITECTURE.md §6.2, D8).
-
-- Billing-related variables (`ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN`, `ANTHROPIC_BASE_URL`, `CLAUDE_CODE_USE_BEDROCK/VERTEX/FOUNDRY`) are removed from the Claude Code child process environment.
-- A session whose `system:init` reports an `apiKeySource` other than `'none'` is aborted before any request.
-- No API-key input exists anywhere in the app.
-- A regression test runs with a fake `ANTHROPIC_API_KEY` set and asserts that the session still uses the subscription.
-
-What the app can't control: if your claude.ai account has **extra usage** (paid overage) turned on,
-going past your plan limit could be charged by Anthropic. Keep it off in your claude.ai billing settings.
-With it off, hitting the limit just pauses EngineBuddy until the limit resets.
+Since 0.4.0 EngineBuddy's only brain is a model in the user's own Ollama
+(`src/integrations/ollama`), reached on a loopback address only (`isLoopbackUrl`; anything else in
+`ollamaUrl` is ignored). There is no cloud AI, no API key and no account anywhere in the app, so
+nothing can be billed and conversations never leave the PC. Approved commands still don't get AI
+service keys (`src/security/command-env.ts`).
 
 ## 11. Internet access
 
-WebSearch and WebFetch are Claude Code's built-ins. They're offered to the model only when
-Settings → Internet is on (the default), and both gates still check every call
-(`src/security/policy/web.ts`). Reading the web is SAFE because nothing local changes; the risks are
-(a) your network being reached (refused: private, loopback, link-local and metadata IPs in every
-notation, local names, wildcard-DNS services) and (b) data leaving in a URL or query (secrets
-can't be read at all; URLs with logins, long opaque blobs or oversized queries are refused).
-Web content is untrusted text: anything with an effect still needs your click, and memory notes
+`read_web_page` and `search_wikipedia` (`src/tools/web`) are EngineBuddy's own tools, SAFE only
+while Settings → Internet is on. They fetch from main, like a browser opening one page:
+- only public http(s) addresses (`url-rules.ts`): no private, loopback, link-local or metadata IPs
+  in any notation, no local names or wildcard-DNS services, no logins in URLs, no
+  data-smuggling-shaped URLs;
+- the host name is resolved first and refused if any address is private (DNS rebinding), and every
+  redirect is checked again (at most 3);
+- text only, at most 2 MB downloaded and 20 000 characters passed on; HTML becomes plain text.
+Search uses Wikipedia's public API (allowed with a descriptive User-Agent), never scraped search
+engines. Web text is untrusted: anything with an effect still needs your click, and memory notes
 can't hold links or rule overrides. Residual risks: docs/security-audit.md R12–R14.

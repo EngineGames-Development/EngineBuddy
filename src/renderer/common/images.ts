@@ -1,5 +1,5 @@
 // Turn a pasted or dropped picture into an attachment main will accept: redrawn on a canvas
-// (which also drops anything that isn't pixels, like metadata) and scaled down to what Claude
+// (which also drops anything that isn't pixels, like metadata) and scaled down to what vision models
 // actually looks at.
 import type { ImageAttachment } from '../../shared/chat';
 import { MAX_IMAGE_BASE64 } from '../../shared/images';

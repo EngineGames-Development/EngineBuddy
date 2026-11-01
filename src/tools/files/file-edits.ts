@@ -36,18 +36,26 @@ const editInput = z.object({
   reason,
 });
 
-function filePermission(p: string, ctx: PolicyContext): PermissionVerdict {
-  if (ctx.isSecretPath(p))
-    return { permission: 'BLOCKED', reason: "Not touching that. It's where secrets live." };
-  // Windows ignores trailing dots and spaces, and `name:stream` writes to the same file, so
-  // compare the names the way Windows will resolve them.
-  const segments = p.split(/[\\/]+/).map((s) =>
+/** Path segments the way Windows resolves them: it ignores trailing dots and spaces, and
+ * `name:stream` is the same file. */
+export function windowsSegments(p: string): string[] {
+  return p.split(/[\\/]+/).map((s) =>
     s
       .replace(/:.*$/, '')
       .replace(/[. ]+$/, '')
       .toLowerCase(),
   );
-  if (/^\.env(\..*)?$/.test(segments.at(-1) ?? ''))
+}
+
+export function isEnvName(p: string): boolean {
+  return /^\.env(\..*)?$/.test(windowsSegments(p).at(-1) ?? '');
+}
+
+function filePermission(p: string, ctx: PolicyContext): PermissionVerdict {
+  if (ctx.isSecretPath(p))
+    return { permission: 'BLOCKED', reason: "Not touching that. It's where secrets live." };
+  const segments = windowsSegments(p);
+  if (isEnvName(p))
     return { permission: 'BLOCKED', reason: "I don't change .env files. Do that one yourself." };
   // Git runs files in .git (hooks, config) on its own later: an edit there is a delayed command.
   if (segments.includes('.git'))

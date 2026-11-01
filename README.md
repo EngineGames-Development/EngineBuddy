@@ -1,7 +1,7 @@
 # EngineBuddy
 
 A small animated character that lives on your Windows desktop, talks like a friend, and uses
-**Claude Code on your own claude.ai subscription** to actually help: answer questions, check how
+**a free AI model running on your own PC** (via [Ollama](https://ollama.com)) to actually help: answer questions, check how
 your PC is doing, open programs and folders, and run commands, but only after you click **Allow**.
 
 ![EngineBuddy doing a system check](docs/images/bubble/live-system-check.png)
@@ -11,23 +11,27 @@ your PC is doing, open programs and folders, and run commands, but only after yo
 - It never runs anything risky without you: every command is shown to you word for word in a
   separate confirmation window first. Some things (formatting disks, switching off Defender,
   reading your passwords) are refused even if you click Allow.
-- It never bills per request: it only runs on your claude.ai login, never on an API key.
+- Free and private: no account, no subscription, no API key. The AI runs on your PC, and your
+  conversations never leave it.
 
 **Status:** 0.4.0. Windows only for now. See [ROADMAP.md](ROADMAP.md).
 
 ## Requirements
 
 - **Windows 10 or 11** (64-bit).
-- **A brain**, one of these (Settings → Brain):
-  - **Ollama, free and offline:** install [Ollama](https://ollama.com), then run
-    `ollama pull qwen3:8b` once in a terminal (about 5 GB). Runs on your PC, no account, nothing
-    leaves the machine. Simpler answers than Claude, no web search; needs a reasonably recent PC
-    (16 GB RAM, ideally a graphics card).
-  - **Claude, with your claude.ai subscription (Pro or Max):** install
-    [Claude Code](https://docs.claude.com/en/docs/claude-code/setup), run `claude` once and log in.
-    Best answers, web search.
+- **[Ollama](https://ollama.com)** (free, MIT licensed) with a model that can use tools. Once, in a
+  terminal:
 
-  With neither, EngineBuddy still starts and runs on a practice script.
+  ```bash
+  ollama pull qwen3:8b
+  ```
+
+  About 5 GB; a reasonably recent PC helps (16 GB RAM, ideally a graphics card). Smaller PCs:
+  `qwen3:4b`. Very small models (1–2 B) often can't use tools properly. Pick the model in
+  Settings → Brain.
+
+  Without Ollama, EngineBuddy still starts, says what's missing, and has a practice script for
+  trying the windows.
 
 ## Install
 
@@ -83,15 +87,15 @@ in my Downloads folder?" (asks before running anything).
 
 ## What it can do
 
-- **Chat with history:** every conversation is saved; reopen an old one and Claude continues it.
-- **Pictures:** paste, drop or screenshot; Claude looks at them.
+- **Chat with history:** every conversation is saved; reopen an old one and it continues.
+- **Pictures:** paste, drop or screenshot; a vision model (e.g. `qwen2.5vl`) can look at them.
 - **Change files:** in your project folders, after you saw the diff and clicked Allow.
 - **Memory:** ask it to remember something; it keeps short notes across restarts (see and delete
   them in Settings).
-- **Internet:** searches the web and reads public pages for current answers, and says where the
-  answer came from (Settings → Internet; never your own network).
+- **Internet:** looks things up on Wikipedia and reads public pages you point it to, and says
+  where the answer came from (Settings → Internet; never your own network).
 - **Your language:** menus and windows in English, Deutsch, Français or Español, following Windows
-  by default; Claude answers in the language you write in.
+  by default; it answers in the language you write in.
 - **Voice:** reads replies aloud, picking the best installed voice for the reply's language
   (natural voices first); speed and pitch in Settings → Voice.
 - Plus system checks, opening programs, and commands (with your OK).
@@ -103,10 +107,8 @@ Most settings are in the Settings window. They live in `%APPDATA%\enginebuddy\se
 | Setting | Default | What |
 |---|---|---|
 | `projectRoots` | `[]` | Folders it may read without asking, e.g. `["D:\\code\\myproject"]`. The first is where it works and runs commands. With none, it uses an empty folder of its own |
-| `agent` | `"claude-code"` | `"ollama"` = free local model, `"mock"` = practice script |
+| `agent` | `"ollama"` | `"mock"` = practice script |
 | `ollamaModel` | `qwen3:8b` | Any Ollama model that supports tools, e.g. `llama3.1:8b` |
-| `claudeExecutable` | auto | Path to `claude.exe` if it isn't found automatically |
-| `claudeModel` | Claude Code's default | e.g. `"sonnet"` |
 | `bubbleDismissSeconds` | `12` | How long a reply stays up |
 | `voice` | off | `{ "enabled": true, "voice": "", "rate": 1, "pitch": 1 }` (`""` = automatic) |
 | `internet` | `true` | Web search and reading public pages |
@@ -141,25 +143,22 @@ Details: [SECURITY.md](SECURITY.md) (the permission model) and
 |---|---|
 | `npm run dev` | Run with hot reload |
 | `npm run check` | Typecheck + lint + format check + tests (run before every commit) |
-| `npm test` | Unit tests only, no Claude usage |
-| `EB_INTEGRATION=1 npx vitest run test/integration` | Live test against real Claude (uses your subscription) |
+| `npm test` | Unit tests |
 | `npm run dist` | Windows installer + portable exe in `release/` |
 
 - [ARCHITECTURE.md](ARCHITECTURE.md): how it's built and why
 - [docs/decisions/](docs/decisions/): one record per step (what was built, why, how it was verified)
-- [CLAUDE.md](CLAUDE.md): the rules for working on this code with Claude Code
+- [CLAUDE.md](CLAUDE.md): the rules for working on this code with an AI coding assistant
 
 ## Privacy
 
 - **Stays on your PC:** settings, memory notes, chat history (including pictures), the audit log,
   all in `%APPDATA%\enginebuddy`. Nothing is sent to the EngineBuddy developers; there's no
   telemetry. Delete chats in the chat window, notes in Settings, or the whole folder.
-- **Ollama mode:** nothing leaves your PC (Ollama runs locally; EngineBuddy only talks to it on
-  127.0.0.1).
-- **Claude mode:** your messages, the pictures you send, file contents Claude reads and tool
-  results go to Anthropic under your claude.ai account and Anthropic's
-  [privacy policy](https://www.anthropic.com/legal/privacy). With Internet on, web searches and
-  fetched pages go through Anthropic and the sites visited.
+- **The AI runs on your PC:** messages, pictures and files never leave it (EngineBuddy talks to
+  Ollama on 127.0.0.1 only).
+- **Internet (if on):** the pages it reads and Wikipedia see a normal request from your PC, like a
+  browser's (your IP address, the page asked for). Nothing else is sent.
 - Screenshots are only taken when you click 📷, and you see them before sending. Only send
   pictures of other people or of others' content if you're allowed to.
 
@@ -168,6 +167,6 @@ Details: [SECURITY.md](SECURITY.md) (the permission model) and
 EngineBuddy's own code: [MIT](LICENSE) © 2026 EngineGames-Development.
 
 Third-party parts keep their own licenses, see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
-In particular the Claude Agent SDK is not MIT: it's © Anthropic PBC and its use is governed by
-Anthropic's terms. EngineBuddy is an independent project, not made or endorsed by Anthropic;
-"Claude" is a trademark of Anthropic and is used here only to say which service the app talks to.
+The AI model you download with Ollama has its own license (e.g. Qwen3: Apache 2.0); check it
+before commercial use. Wikipedia texts are CC BY-SA 4.0: EngineBuddy names Wikipedia as the source.
+EngineBuddy is an independent project, not affiliated with Ollama, the model makers or Wikimedia.

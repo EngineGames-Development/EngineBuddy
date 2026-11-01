@@ -1,17 +1,15 @@
 // PolicyEngine (SECURITY.md §2–3): the single place that decides whether a tool request may run.
-// Both gates on the Claude Code path (the PreToolUse hook and canUseTool) and our own tool runner
-// call it. Default deny: a tool that isn't in this table, or isn't registered, can't run.
+// The ToolRunner calls it before every tool call. Default deny: a tool that isn't in this table, or isn't registered, can't run.
 //
 // CONFIRM is never `allowed` here. For our own tools that can describe the request, the decision is
-// `confirmable`: the gates let it through to the ToolRunner, which asks you in the confirmation
+// `confirmable`: the ToolRunner asks you in the confirmation
 // window before running it. Built-in CONFIRM tools (Bash, Write, …) stay denied: we don't run them,
 // so we couldn't show you exactly what would run.
 import { z } from 'zod';
 import type { Permission, PolicyContext, ToolRegistry } from '../../core/tools/tool-def';
 import { isEnvFile, isInside, normalisePath, type PathEnv, type SecretPaths } from './paths';
-import { checkWebUrl } from './web';
 
-/** Our in-process MCP server's name; Claude Code prefixes our tools with `mcp__<server>__`. */
+/** Our tools' namespace: the ToolRunner asks about `mcp__<server>__<tool>` (kept from the MCP days). */
 export const MCP_SERVER = 'enginebuddy';
 const MCP_PREFIX = `mcp__${MCP_SERVER}__`;
 
@@ -37,8 +35,6 @@ export interface PolicyOptions {
   /** Relative paths in tool input resolve against this (the agent's cwd). */
   cwd: string;
   realpath?: (p: string) => string;
-  /** WebSearch / WebFetch allowed (Settings → Internet). Off unless set. */
-  web?: boolean;
 }
 
 const REASONS = {
@@ -47,19 +43,16 @@ const REASONS = {
   envFile: "That's a .env file. Reading those will need your OK, and I can't ask for that yet.",
   shell: 'Use run_command for that instead: it shows you the exact command and asks you first.',
   write: 'Use write_file or edit_file for that instead: they show you the change first and ask.',
-  webOff: 'Internet access is switched off in my settings.',
   unknown: "That tool isn't on my list, so no.",
   badInput: "That request didn't look right, so I didn't run it.",
   badPath: "I couldn't make sense of that path, so I left it alone.",
   needsConfirm: "That needs your OK, and I can't ask for it this way.",
 } as const;
 
-// Built-in Claude Code tools. Inputs are validated loosely (Claude Code may add fields), but the
+// Built-in agent tools (from the Claude Code days; nothing calls them now, kept default-deny). The
 // fields we decide on must be there and be strings.
 const readInput = z.object({ file_path: z.string().min(1) });
 const globInput = z.object({ pattern: z.string().min(1), path: z.string().optional() });
-const searchInput = z.object({ query: z.string().min(1).max(500) });
-const fetchInput = z.object({ url: z.string().min(1), prompt: z.string().optional() });
 
 const CONFIRM_BUILTINS: Record<string, keyof typeof REASONS> = {
   Bash: 'shell',
@@ -80,9 +73,6 @@ export class PolicyEngine {
         return this.evaluateRead(rawInput);
       case 'Glob':
         return this.evaluateGlob(rawInput);
-      case 'WebSearch':
-      case 'WebFetch':
-        return this.evaluateWeb(toolName, rawInput);
     }
     const confirmReason = CONFIRM_BUILTINS[toolName];
     if (confirmReason) return this.confirm(toolName, REASONS[confirmReason], `builtin:${toolName}`);
@@ -132,19 +122,6 @@ export class PolicyEngine {
       return deny('Glob', 'BLOCKED', REASONS.outside, 'glob-escape');
     }
     return this.evaluatePath('Glob', path ?? this.opts.cwd, { reading: false });
-  }
-
-  private evaluateWeb(tool: 'WebSearch' | 'WebFetch', rawInput: unknown): Decision {
-    if (!this.opts.web) return deny(tool, 'BLOCKED', REASONS.webOff, 'web-off');
-    if (tool === 'WebSearch') {
-      return searchInput.safeParse(rawInput).success
-        ? allow(tool, 'web-search')
-        : deny(tool, 'BLOCKED', REASONS.badInput, 'invalid-input');
-    }
-    const parsed = fetchInput.safeParse(rawInput);
-    if (!parsed.success) return deny(tool, 'BLOCKED', REASONS.badInput, 'invalid-input');
-    const verdict = checkWebUrl(parsed.data.url);
-    return verdict.ok ? allow(tool, 'web-fetch') : deny(tool, 'BLOCKED', verdict.reason, 'web-url');
   }
 
   private evaluatePath(tool: string, rawPath: string, { reading }: { reading: boolean }): Decision {

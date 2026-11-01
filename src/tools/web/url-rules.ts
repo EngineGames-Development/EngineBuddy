@@ -1,9 +1,9 @@
-// Rules for Claude Code's built-in WebSearch and WebFetch (SECURITY.md §11).
+// Rules for the web tools (SECURITY.md §11): which addresses read_web_page may open.
 //
 // Looking things up online is SAFE: it's what makes a companion useful, and the user can turn it
 // off in Settings. The risk is the other direction: a page (or a prompt-injected file) talking the
 // model into fetching an address that carries your data out, or that points into your own network.
-// So WebFetch only reaches public http(s) addresses, never with a login in the URL, and an address
+// So read_web_page only reaches public http(s) addresses, never with a login in the URL, and an address
 // that looks like it smuggles data (a long opaque blob, a huge query) is refused. These rules only
 // ever say no; they never widen anything.
 import { isIP } from 'node:net';

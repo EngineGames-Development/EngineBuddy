@@ -25,14 +25,12 @@ function useVoices(): SpeechSynthesisVoice[] {
 
 function Settings() {
   const [view, setView] = useState<SettingsView>();
-  const [model, setModel] = useState('');
   const [ollamaModel, setOllamaModel] = useState('');
   const voices = useVoices();
 
   useEffect(() => {
     const off = window.buddy.onSettings((v) => {
       setView(v);
-      setModel(v.claudeModel);
       setOllamaModel(v.ollamaModel);
     });
     send({ type: 'ready' });
@@ -162,30 +160,26 @@ function Settings() {
               send({ type: 'update', patch: { agent: e.target.value as SettingsView['agent'] } })
             }
           >
-            <option value="claude-code">{t('settings.modeClaude')}</option>
             <option value="ollama">{t('settings.modeOllama')}</option>
             <option value="mock">{t('settings.modeMock')}</option>
           </select>
         </label>
-        {view.agent === 'ollama' && <p className="help">{t('settings.ollamaHelp')}</p>}
-        {view.agent !== 'mock' && (
-          <label>
-            {t('settings.model')}
-            <input
-              key={view.agent}
-              value={view.agent === 'ollama' ? ollamaModel : model}
-              placeholder={view.agent === 'ollama' ? 'qwen3:8b' : t('settings.modelPlaceholder')}
-              onChange={(e) => (view.agent === 'ollama' ? setOllamaModel : setModel)(e.target.value)}
-              onBlur={() => {
-                if (view.agent === 'ollama') {
-                  if (ollamaModel !== view.ollamaModel)
-                    send({ type: 'update', patch: { ollamaModel: ollamaModel.trim() } });
-                } else if (model !== view.claudeModel) {
-                  send({ type: 'update', patch: { claudeModel: model.trim() } });
+        {view.agent === 'ollama' && (
+          <>
+            <p className="help">{t('settings.ollamaHelp')}</p>
+            <label>
+              {t('settings.model')}
+              <input
+                value={ollamaModel}
+                placeholder="qwen3:8b"
+                onChange={(e) => setOllamaModel(e.target.value)}
+                onBlur={() =>
+                  ollamaModel !== view.ollamaModel &&
+                  send({ type: 'update', patch: { ollamaModel: ollamaModel.trim() } })
                 }
-              }}
-            />
-          </label>
+              />
+            </label>
+          </>
         )}
         <label>
           {t('settings.bubble')} <span className="value">{view.bubbleDismissSeconds} s</span>

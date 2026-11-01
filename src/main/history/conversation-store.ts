@@ -1,6 +1,6 @@
 // The chat history (userData/history): one JSON file per conversation. It listens to the same
 // BuddyEvents as the avatar and bubble, so every turn ends up here no matter where you asked:
-// bubble, chat window or menu. Each conversation remembers Claude Code's session ID, so opening
+// bubble, chat window or menu. Each conversation remembers the agent's conversation ID, so opening
 // an old one later continues it with full context.
 import { randomUUID } from 'node:crypto';
 import { mkdirSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from 'node:fs';
@@ -16,7 +16,7 @@ export interface Conversation {
   title: string;
   createdAt: number;
   updatedAt: number;
-  /** Claude Code's session ID, for resuming. */
+  /** The agent's conversation ID, for resuming. */
   agentSessionId?: string;
   messages: ChatMessage[];
 }

@@ -1,5 +1,5 @@
 // The words EngineBuddy's own UI uses, in each language it speaks. Model replies aren't translated:
-// Claude answers in the user's language by itself (the system prompt names the default).
+// the model answers in the user's language by itself (the system prompt names the default).
 //
 // "system" follows Windows (main reads `app.getLocale()`); anything we don't have falls back to
 // English. Main passes the resolved language to every renderer page as `?lang=`.
@@ -92,7 +92,7 @@ const en = {
   'settings.languageHelp':
     'For menus and windows, and the language EngineBuddy answers in unless you write in another.',
   'settings.internet': 'Internet',
-  'settings.internetOn': 'Let EngineBuddy search the web and read public pages',
+  'settings.internetOn': 'Let EngineBuddy search Wikipedia and read public web pages',
   'settings.internetHelp':
     'It never opens addresses inside your network, never sends logins, and refuses addresses that look like they carry data out.',
   'settings.voice': 'Voice',
@@ -106,13 +106,17 @@ const en = {
   'settings.sample': "Hey. That's how I sound.",
   'settings.brain': 'Brain',
   'settings.mode': 'Mode',
-  'settings.modeClaude': 'Claude (your claude.ai subscription)',
   'settings.modeOllama': 'Ollama (free, runs on this PC)',
   'settings.ollamaHelp':
-    'Free and offline: install Ollama from ollama.com, then run `ollama pull qwen3:8b` once in a terminal. Needs about 6 GB of disk and a decent PC; answers are simpler than with Claude, and there is no internet search.',
-  'settings.modeMock': 'Practice script (no Claude, no usage)',
+    'Free and offline: install Ollama from ollama.com, then run `ollama pull qwen3:8b` once in a terminal. Needs about 6 GB of disk and a decent PC; answers are simpler than with big cloud AIs.',
+  'settings.modeMock': 'Practice script (no AI, for trying the windows)',
+  'ollama.notRunning':
+    "I can't reach Ollama. Is it installed and running? (ollama.com, then `ollama pull {model}`.)",
+  'ollama.notPulled': "The model {model} isn't downloaded yet. Run `ollama pull {model}` in a terminal.",
+  'ollama.noTools': "{model} can't use tools. Pick one that can in Settings, e.g. qwen3:8b or llama3.1:8b.",
+  'ollama.said': 'Ollama said: {text}',
+  'ollama.stopHere': "I'll stop here; that was a lot of steps. Want me to keep going?",
   'settings.model': 'Model',
-  'settings.modelPlaceholder': 'Default model (e.g. sonnet, opus)',
   'settings.bubble': 'Speech bubble stays for',
   'settings.memory': 'Memory',
   'settings.memoryHelp':
@@ -185,7 +189,7 @@ const de: Dictionary = {
   'settings.languageHelp':
     'Für Menüs und Fenster, und in dieser Sprache antwortet EngineBuddy, außer du schreibst in einer anderen.',
   'settings.internet': 'Internet',
-  'settings.internetOn': 'EngineBuddy darf im Web suchen und öffentliche Seiten lesen',
+  'settings.internetOn': 'EngineBuddy darf Wikipedia durchsuchen und öffentliche Webseiten lesen',
   'settings.internetHelp':
     'Er öffnet nie Adressen in deinem Netzwerk, schickt keine Logins mit und lehnt Adressen ab, die nach Datenabfluss aussehen.',
   'settings.voice': 'Stimme',
@@ -199,13 +203,19 @@ const de: Dictionary = {
   'settings.sample': 'Hey. So klinge ich.',
   'settings.brain': 'Gehirn',
   'settings.mode': 'Modus',
-  'settings.modeClaude': 'Claude (dein claude.ai-Abo)',
   'settings.modeOllama': 'Ollama (kostenlos, läuft auf diesem PC)',
   'settings.ollamaHelp':
-    'Kostenlos und offline: Ollama von ollama.com installieren, dann einmal `ollama pull qwen3:8b` im Terminal ausführen. Braucht etwa 6 GB Speicher und einen ordentlichen PC; die Antworten sind einfacher als mit Claude, und es gibt keine Websuche.',
-  'settings.modeMock': 'Übungsskript (kein Claude, kein Verbrauch)',
+    'Kostenlos und offline: Ollama von ollama.com installieren, dann einmal `ollama pull qwen3:8b` im Terminal ausführen. Braucht etwa 6 GB Speicher und einen ordentlichen PC; die Antworten sind einfacher als bei großen Cloud-KIs.',
+  'settings.modeMock': 'Übungsskript (keine KI, zum Ausprobieren der Fenster)',
+  'ollama.notRunning':
+    'Ich erreiche Ollama nicht. Ist es installiert und gestartet? (ollama.com, dann `ollama pull {model}`.)',
+  'ollama.notPulled':
+    'Das Modell {model} ist noch nicht heruntergeladen. Führ `ollama pull {model}` im Terminal aus.',
+  'ollama.noTools':
+    '{model} kann keine Werkzeuge nutzen. Wähl in den Einstellungen eins, das es kann, z. B. qwen3:8b oder llama3.1:8b.',
+  'ollama.said': 'Ollama meldet: {text}',
+  'ollama.stopHere': 'Ich hör hier auf, das waren viele Schritte. Soll ich weitermachen?',
   'settings.model': 'Modell',
-  'settings.modelPlaceholder': 'Standardmodell (z. B. sonnet, opus)',
   'settings.bubble': 'Sprechblase bleibt für',
   'settings.memory': 'Gedächtnis',
   'settings.memoryHelp':
@@ -275,7 +285,7 @@ const fr: Dictionary = {
   'settings.languageHelp':
     'Pour les menus et fenêtres, et la langue de réponse sauf si tu écris dans une autre.',
   'settings.internet': 'Internet',
-  'settings.internetOn': 'Autoriser EngineBuddy à chercher sur le web et lire des pages publiques',
+  'settings.internetOn': 'Autoriser EngineBuddy à chercher sur Wikipédia et lire des pages web publiques',
   'settings.internetHelp':
     "Il n'ouvre jamais d'adresses de ton réseau, n'envoie pas d'identifiants et refuse les adresses qui semblent faire sortir des données.",
   'settings.voice': 'Voix',
@@ -289,13 +299,19 @@ const fr: Dictionary = {
   'settings.sample': 'Salut. Voilà comment je parle.',
   'settings.brain': 'Cerveau',
   'settings.mode': 'Mode',
-  'settings.modeClaude': 'Claude (ton abonnement claude.ai)',
   'settings.modeOllama': 'Ollama (gratuit, tourne sur ce PC)',
   'settings.ollamaHelp':
-    "Gratuit et hors ligne : installe Ollama depuis ollama.com, puis lance une fois `ollama pull qwen3:8b` dans un terminal. Il faut environ 6 Go et un PC correct ; les réponses sont plus simples qu'avec Claude, et sans recherche web.",
-  'settings.modeMock': "Script d'entraînement (sans Claude, sans consommation)",
+    "Gratuit et hors ligne : installe Ollama depuis ollama.com, puis lance une fois `ollama pull qwen3:8b` dans un terminal. Il faut environ 6 Go et un PC correct ; les réponses sont plus simples qu'avec les grandes IA en ligne.",
+  'settings.modeMock': "Script d'entraînement (sans IA, pour essayer les fenêtres)",
+  'ollama.notRunning':
+    "Je n'arrive pas à joindre Ollama. Est-il installé et lancé ? (ollama.com, puis `ollama pull {model}`.)",
+  'ollama.notPulled':
+    "Le modèle {model} n'est pas encore téléchargé. Lance `ollama pull {model}` dans un terminal.",
+  'ollama.noTools':
+    "{model} ne sait pas utiliser d'outils. Choisis-en un qui sait dans les paramètres, ex. qwen3:8b ou llama3.1:8b.",
+  'ollama.said': 'Ollama dit : {text}',
+  'ollama.stopHere': "Je m'arrête là, ça faisait beaucoup d'étapes. Je continue ?",
   'settings.model': 'Modèle',
-  'settings.modelPlaceholder': 'Modèle par défaut (ex. sonnet, opus)',
   'settings.bubble': 'La bulle reste pendant',
   'settings.memory': 'Mémoire',
   'settings.memoryHelp':
@@ -364,7 +380,7 @@ const es: Dictionary = {
   'settings.languageSystem': 'Predeterminado del sistema ({name})',
   'settings.languageHelp': 'Para menús y ventanas, y el idioma en que responde salvo que escribas en otro.',
   'settings.internet': 'Internet',
-  'settings.internetOn': 'Permitir que EngineBuddy busque en la web y lea páginas públicas',
+  'settings.internetOn': 'Permitir que EngineBuddy busque en Wikipedia y lea páginas web públicas',
   'settings.internetHelp':
     'Nunca abre direcciones de tu red, no envía credenciales y rechaza direcciones que parezcan sacar datos.',
   'settings.voice': 'Voz',
@@ -378,13 +394,19 @@ const es: Dictionary = {
   'settings.sample': 'Hola. Así sueno yo.',
   'settings.brain': 'Cerebro',
   'settings.mode': 'Modo',
-  'settings.modeClaude': 'Claude (tu suscripción de claude.ai)',
   'settings.modeOllama': 'Ollama (gratis, funciona en este PC)',
   'settings.ollamaHelp':
-    'Gratis y sin conexión: instala Ollama desde ollama.com y ejecuta una vez `ollama pull qwen3:8b` en una terminal. Necesita unos 6 GB y un PC decente; las respuestas son más simples que con Claude y no hay búsqueda web.',
-  'settings.modeMock': 'Guion de práctica (sin Claude, sin consumo)',
+    'Gratis y sin conexión: instala Ollama desde ollama.com y ejecuta una vez `ollama pull qwen3:8b` en una terminal. Necesita unos 6 GB y un PC decente; las respuestas son más simples que con las grandes IA en la nube.',
+  'settings.modeMock': 'Guion de práctica (sin IA, para probar las ventanas)',
+  'ollama.notRunning':
+    'No consigo conectar con Ollama. ¿Está instalado y en marcha? (ollama.com, luego `ollama pull {model}`.)',
+  'ollama.notPulled':
+    'El modelo {model} aún no está descargado. Ejecuta `ollama pull {model}` en una terminal.',
+  'ollama.noTools':
+    '{model} no puede usar herramientas. Elige uno que sí en Ajustes, p. ej. qwen3:8b o llama3.1:8b.',
+  'ollama.said': 'Ollama dice: {text}',
+  'ollama.stopHere': 'Me paro aquí, han sido muchos pasos. ¿Sigo?',
   'settings.model': 'Modelo',
-  'settings.modelPlaceholder': 'Modelo predeterminado (p. ej. sonnet, opus)',
   'settings.bubble': 'La burbuja se queda',
   'settings.memory': 'Memoria',
   'settings.memoryHelp':

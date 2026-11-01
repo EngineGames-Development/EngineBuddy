@@ -82,10 +82,6 @@ export const settingsCommandSchema = z.discriminatedUnion('type', [
           .string()
           .max(100)
           .regex(/^[\w.:/-]*$/, 'not a model name'),
-        claudeModel: z
-          .string()
-          .max(100)
-          .regex(/^[\w.:[\]-]*$/, 'not a model name'),
         bubbleDismissSeconds: z.number().int().min(3).max(600),
         voice: voiceSettingsSchema,
         internet: z.boolean(),

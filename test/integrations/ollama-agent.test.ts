@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import type { AgentEvent } from '../../src/core/agent/agent-provider';
 import { ToolRegistry } from '../../src/core/tools/tool-def';
-import { OllamaAgent, isLoopbackUrl } from '../../src/integrations/ollama/ollama-agent';
+import { OllamaAgent, isLoopbackUrl, textToolCalls } from '../../src/integrations/ollama/ollama-agent';
 import type { AuditEntry } from '../../src/security/audit/audit-log';
 import { SecretPaths, canonical, type PathEnv } from '../../src/security/policy/paths';
 import { PolicyEngine } from '../../src/security/policy/policy-engine';
@@ -177,6 +177,31 @@ describe('OllamaAgent', () => {
     expect(sent[0]!.role).toBe('system');
     expect(sent.some((m) => m.images)).toBe(false);
     expect(JSON.stringify(sent)).toContain('my name is Leo');
+  });
+
+  it('understands tool calls a small model writes as text, and hides the JSON', async () => {
+    const { agent, audit } = setup([
+      [say('{"name": "get_system_info", '), say('"arguments": {}}', true)],
+      [say('Alles gut.', true)],
+    ]);
+    const events = await run(agent, 'wie gehts meinem pc?');
+    const text = events.flatMap((e) => (e.type === 'message_delta' ? [e.text] : [])).join('');
+    expect(text).toBe('Alles gut.');
+    expect(audit.some((a) => a.tool === 'get_system_info' && a.event === 'result')).toBe(true);
+  });
+
+  it('only treats JSON naming one of our tools as a call', () => {
+    const ours = (n: string) => n === 'get_system_info';
+    expect(
+      textToolCalls('{"name":"get_system_info","arguments":{}}\n{"name":"get_system_info"}', ours),
+    ).toHaveLength(2);
+    expect(textToolCalls('```json\n{"name":"get_system_info","parameters":{"x":1}}\n```', ours)).toEqual([
+      { function: { name: 'get_system_info', arguments: { x: 1 } } },
+    ]);
+    expect(textToolCalls('{"name":"Bash","arguments":{}}', ours)).toEqual([]);
+    expect(textToolCalls('{"name":"get_system_info"} and some words', ours)).toEqual([]);
+    expect(textToolCalls('{"a": "}"}', ours)).toEqual([]);
+    expect(textToolCalls('Hello', ours)).toEqual([]);
   });
 
   it('only talks to Ollama on this PC', () => {

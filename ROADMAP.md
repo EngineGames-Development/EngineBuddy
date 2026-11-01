@@ -4,22 +4,27 @@ Each phase ends with something you can **run and use**, plus a short written rev
 worked, what didn't, and what decisions changed (appended to `docs/decisions/`).
 No phase starts until the previous one's exit criteria pass.
 
-## Where it stands (0.3.0, 2026-11-01)
+## Where it stands (0.4.0, 2026-11-01)
 
-0.3.0 is the last feature release for now.
+0.4.0 is the last feature release for now.
 
 | Version | Shipped |
 |---|---|
 | 0.1.0 | Phase 1 complete: avatar, bubble, Claude Code on your claude.ai subscription, system check, opening programs, VS Code, `run_command` behind the confirmation window, secret-path denylist, audit log, Windows installer (part of Phase 6) |
 | 0.2.0 | Most of Phase 2 and 3: chat window with history, pictures (paste, drop, screenshot; part of Phase 8), file edits with a diff confirmation, settings window, memory with a Settings inspector, voice output (part of Phase 7) |
 | 0.3.0 | Internet (web search, public pages; part of Phase 8), UI in English/Deutsch/Français/Español following Windows, automatic voice per language with pitch, a smarter prompt with date/time and language context |
+| 0.4.0 | Local only, no grey zones: the brain is a free model in Ollama on your PC (Phase 8's LocalAgent); Claude Code and the Agent SDK removed; own file tools; web via Wikipedia's API and public pages you point it to; third-party notices and privacy section |
 
 Still open from the phases below: inline action buttons, custom context menu, the remaining
 avatar states, project awareness (Phase 4), proactive behaviour (Phase 5), desktop modes (Phase 6),
-speech input (Phase 7), LocalAgent and other platforms (Phase 8).
+speech input (Phase 7), other platforms (Phase 8).
 
 ### Next small steps
 
+- Live-test tool calling with `qwen3:8b`, and show a hint in Settings when the chosen model can't
+  use tools (Ollama's `/api/show` lists capabilities).
+- A model picker that lists what's installed in Ollama, with a "download" button.
+- More legal search sources with open APIs (e.g. Wikidata, MDN, npm, PyPI, GitHub's public API).
 - Translate tool texts too: activity lines ("Reading nodejs.org") and confirmation details are still English.
 - Switch language live, without a restart; clear the restart banner when a setting is changed back.
 - A SAFE `open_url` tool for public pages in your default browser.
@@ -31,7 +36,8 @@ speech input (Phase 7), LocalAgent and other platforms (Phase 8).
 
 - An independent security review (docs/security-audit.md is a self-review).
 - Code signing for releases, so SmartScreen stops warning.
-- DNS-rebinding protection for WebFetch (audit R13), and the dev-only minimatch advisory (F12).
+- Close the last DNS-rebinding gap (audit R13: pin the resolved address for the fetch), and the
+  dev-only minimatch advisory (F12).
 - Run the window checklist (`test/manual/window.md`) on a second monitor and high DPI.
 
 ---

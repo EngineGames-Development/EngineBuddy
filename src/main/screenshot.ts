@@ -1,7 +1,7 @@
 import { desktopCapturer, screen, type BrowserWindow } from 'electron';
 import type { ImageAttachment } from '../shared/chat';
 
-/** Claude scales larger pictures down to about this anyway; sending more only costs time. */
+/** Vision models scale larger pictures down anyway; sending more only costs time. */
 const MAX_SIDE = 1568;
 
 /**

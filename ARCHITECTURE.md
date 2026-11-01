@@ -1,5 +1,10 @@
 # EngineBuddy — Architecture
 
+> **Since 0.4.0** the brain is a local model in Ollama (`src/integrations/ollama`), not Claude Code:
+> Claude Code and the Agent SDK were removed to stay clear of Anthropic's terms for third-party
+> apps (docs/decisions/017). Sections below that describe the Claude Code path (§6.2, the SDK
+> spikes) are history; the AgentProvider interface, event bus, policy and tools are unchanged.
+
 Status: **proposal, pre-implementation** (2026-10-31). Nothing here is built yet.
 Decisions marked **[verify in spike]** are assumptions that Phase 1 step 0 must confirm
 before code depends on them.

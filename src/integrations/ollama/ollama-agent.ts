@@ -2,7 +2,7 @@
 // PC: no account, no subscription, nothing leaves the machine.
 //
 // We talk to Ollama's /api/chat on loopback only, and run the tool loop ourselves: every tool call
-// the model asks for goes through the same ToolRunner as Claude's (PolicyEngine, confirmation
+// the model asks for goes through the ToolRunner (PolicyEngine, confirmation
 // window, audit log). It only gets our own tools, no built-ins: no file reading beyond them and no
 // internet.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -30,6 +30,7 @@ export interface OllamaOptions {
   systemPrompt: () => string;
   /** Where conversations are kept, so reopening a chat continues it. */
   storeDir?: string;
+  texts?: OllamaTexts;
   fetch?: typeof fetch;
 }
 
@@ -73,8 +74,23 @@ export function isLoopbackUrl(raw: string): boolean {
   }
 }
 
-const NOT_RUNNING =
-  "I can't reach Ollama. Is it installed and running? (ollama.com, then `ollama pull {model}`.)";
+/** The agent's own messages; main passes them in the UI language (shared/i18n.ts). */
+export interface OllamaTexts {
+  notRunning: (model: string) => string;
+  notPulled: (model: string) => string;
+  noTools: (model: string) => string;
+  said: (text: string) => string;
+  stopHere: string;
+}
+
+const ENGLISH: OllamaTexts = {
+  notRunning: (m) =>
+    `I can't reach Ollama. Is it installed and running? (ollama.com, then \`ollama pull ${m}\`.)`,
+  notPulled: (m) => `The model ${m} isn't downloaded yet. Run \`ollama pull ${m}\` in a terminal.`,
+  noTools: (m) => `${m} can't use tools. Pick one that can in Settings, e.g. qwen3:8b or llama3.1:8b.`,
+  said: (text) => `Ollama said: ${text}`,
+  stopHere: "I'll stop here; that was a lot of steps. Want me to keep going?",
+};
 
 export class OllamaAgent implements AgentProvider {
   readonly id = 'local' as const;
@@ -84,10 +100,12 @@ export class OllamaAgent implements AgentProvider {
   private turnId: string | undefined;
   private readonly lines = new LinePicker();
   private readonly fetch: typeof fetch;
+  private readonly texts: OllamaTexts;
 
   constructor(private readonly opts: OllamaOptions) {
     if (!isLoopbackUrl(opts.baseUrl)) throw new Error('Ollama must run on this PC (127.0.0.1).');
     this.fetch = opts.fetch ?? fetch;
+    this.texts = opts.texts ?? ENGLISH;
   }
 
   async *startTurn(input: TurnInput, ctx: TurnContext): AsyncIterable<AgentEvent> {
@@ -106,16 +124,28 @@ export class OllamaAgent implements AgentProvider {
     try {
       for (let round = 0; round < MAX_ROUNDS; round++) {
         let text = '';
+        let shown = 0;
         const calls: ToolCall[] = [];
         for await (const chunk of this.chat(abort.signal)) {
           if (chunk.error) throw new OllamaError(chunk.error);
-          const piece = chunk.message?.content ?? '';
-          if (piece) {
-            text += piece;
-            yield { type: 'message_delta', text: piece };
-          }
+          text += chunk.message?.content ?? '';
           calls.push(...(chunk.message?.tool_calls ?? []));
+          // Hold back text that starts like JSON: small models often write their tool calls as
+          // text instead of sending them properly (textToolCalls below).
+          if (text.trimStart().startsWith('{') && !calls.length) continue;
+          if (text.length > shown) {
+            yield { type: 'message_delta', text: text.slice(shown) };
+            shown = text.length;
+          }
         }
+        if (!calls.length) {
+          const fromText = textToolCalls(text, (name) => this.opts.registry.get(name) !== undefined);
+          if (fromText.length) {
+            calls.push(...fromText);
+            text = '';
+          }
+        }
+        if (text.length > shown) yield { type: 'message_delta', text: text.slice(shown) };
         this.messages.push({
           role: 'assistant',
           content: text,
@@ -128,7 +158,7 @@ export class OllamaAgent implements AgentProvider {
           yield* this.runTool(call, `${ctx.turnId}-${round}-${i}`, abort.signal);
         }
       }
-      yield { type: 'message', text: "\n\nI'll stop here; that was a lot of steps. Want me to keep going?" };
+      yield { type: 'message', text: `\n\n${this.texts.stopHere}` };
     } catch (error) {
       if (abort.signal.aborted) return;
       yield { type: 'agent_error', message: this.explain(error), recoverable: true };
@@ -152,7 +182,7 @@ export class OllamaAgent implements AgentProvider {
       category: tool?.category ?? 'system',
       description: tool && parsed?.success ? tool.activity(parsed.data) : `Using ${name}`,
     };
-    // The same gate as for Claude: unknown tools and bad input are refused by the PolicyEngine.
+    // The one gate: unknown tools and bad input are refused by the PolicyEngine.
     const out = await this.opts.runner.run(name, args, {
       ...(this.turnId ? { turnId: this.turnId } : {}),
       signal,
@@ -208,12 +238,11 @@ export class OllamaAgent implements AgentProvider {
   private explain(error: unknown): string {
     if (error instanceof OllamaError) {
       if (error.status === 404 || /not found|pull/i.test(error.message))
-        return `The model ${this.opts.model} isn't downloaded yet. Run \`ollama pull ${this.opts.model}\` in a terminal.`;
-      if (/does not support tools/i.test(error.message))
-        return `${this.opts.model} can't use tools. Pick a model that can, e.g. qwen3:8b or llama3.1:8b.`;
-      return `Ollama said: ${error.message.slice(0, 200)}`;
+        return this.texts.notPulled(this.opts.model);
+      if (/does not support tools/i.test(error.message)) return this.texts.noTools(this.opts.model);
+      return this.texts.said(error.message.slice(0, 200));
     }
-    return NOT_RUNNING.replace('{model}', this.opts.model);
+    return this.texts.notRunning(this.opts.model);
   }
 
   async cancel(turnId: string): Promise<void> {
@@ -300,6 +329,51 @@ function parseChunk(line: string): z.infer<typeof chunkSchema> {
   } catch {
     return {};
   }
+}
+
+/**
+ * Tool calls written as text, e.g. `{"name": "get_system_info", "arguments": {}}`, one or more,
+ * and nothing else. Only names of our own tools count; they still go through the ToolRunner.
+ */
+export function textToolCalls(text: string, isTool: (name: string) => boolean): ToolCall[] {
+  const calls: ToolCall[] = [];
+  let rest = text.trim().replace(/^```(?:json)?\s*|\s*```$/g, '');
+  while (rest) {
+    const end = jsonObjectEnd(rest);
+    if (end < 0) return [];
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(rest.slice(0, end + 1));
+    } catch {
+      return [];
+    }
+    const call = z
+      .object({ name: z.string(), arguments: z.unknown().optional(), parameters: z.unknown().optional() })
+      .safeParse(parsed);
+    if (!call.success || !isTool(call.data.name)) return [];
+    calls.push({
+      function: { name: call.data.name, arguments: call.data.arguments ?? call.data.parameters ?? {} },
+    });
+    rest = rest.slice(end + 1).trim();
+  }
+  return calls;
+}
+
+/** Index of the brace that closes the JSON object starting at 0, or -1. */
+function jsonObjectEnd(s: string): number {
+  if (!s.startsWith('{')) return -1;
+  let depth = 0;
+  let inString = false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (inString) {
+      if (c === '\\') i++;
+      else if (c === '"') inString = false;
+    } else if (c === '"') inString = true;
+    else if (c === '{') depth++;
+    else if (c === '}' && --depth === 0) return i;
+  }
+  return -1;
 }
 
 /** Models send arguments as an object, some as a JSON string. */

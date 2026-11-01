@@ -16,19 +16,15 @@ export const settingsSchema = z.object({
   lastDisplayId: z.string().optional().catch(undefined),
   /** How long the bubble stays after a reply (it waits while you hover or type). */
   bubbleDismissSeconds: z.number().min(3).max(600).catch(12),
-  /** Which brain: Claude Code on your subscription, or the scripted mock (no tokens). */
-  agent: z.enum(AGENTS).catch('claude-code'),
-  /** Path to claude.exe. Empty: ~/.local/bin/claude.exe, then PATH. */
-  claudeExecutable: z.string().optional().catch(undefined),
-  /** Model alias or ID for Claude Code (e.g. "sonnet"). Empty: Claude Code's default. */
-  claudeModel: z.string().optional().catch(undefined),
+  /** Which brain: a free local model in Ollama, or the scripted mock. */
+  agent: z.enum(AGENTS).catch('ollama'),
   /** The free brain: a model in Ollama on this PC (integrations/ollama). */
   ollamaModel: z.string().max(100).catch(''),
   /** Where Ollama listens. Only loopback addresses are used; anything else falls back to the default. */
   ollamaUrl: z.string().max(200).catch(''),
   /** Folders EngineBuddy may read freely. The first one is the agent's working folder. */
   projectRoots: z.array(z.string()).catch([]),
-  /** Let Claude search the web and read public pages (security/policy/web.ts). */
+  /** Let the agent search Wikipedia and read public pages (tools/web). */
   internet: z.boolean().catch(true),
   /** UI and default reply language. "system" follows Windows. */
   language: z.enum(LANGUAGE_PREFS).catch('system'),

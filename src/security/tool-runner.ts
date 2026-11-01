@@ -1,6 +1,6 @@
 // Runs one of our own tools the only allowed way: validate → policy → (confirm) → execute → audit
-// (SECURITY.md §3). The Claude Code gates have usually checked already; this checks again, so a
-// tool can't run through any path that skipped them (e.g. a menu intent).
+// (SECURITY.md §3). Every path (model tool calls, menu intents) goes through here, so no tool runs
+// without the checks.
 import type { ToolDef, ToolRegistry, ToolResult } from '../core/tools/tool-def';
 import type { AuditSink } from './audit/audit-log';
 import type { ConfirmationBroker, ConfirmOutcome } from './confirmations/confirmation-broker';

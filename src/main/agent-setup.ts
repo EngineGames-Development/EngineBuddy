@@ -4,10 +4,9 @@ import { join } from 'node:path';
 import { app } from 'electron';
 import type { AgentProvider } from '../core/agent/agent-provider';
 import type { ToolRegistry } from '../core/tools/tool-def';
-import { ClaudeCodeAgent } from '../integrations/claude-code/claude-code-agent';
-import { locateClaude, subscriptionOnlyEnv } from '../integrations/claude-code/environment';
 import { MockAgent } from '../integrations/mock/mock-agent';
 import { AuditLog } from '../security/audit/audit-log';
+import { commandEnv } from '../security/command-env';
 import type { ConfirmationBroker } from '../security/confirmations/confirmation-broker';
 import { classifyCommand } from '../security/policy/command-classifier';
 import { SecretPaths, normalisePath, type PathEnv } from '../security/policy/paths';
@@ -15,14 +14,14 @@ import { PolicyEngine } from '../security/policy/policy-engine';
 import { ToolRunner } from '../security/tool-runner';
 import { createToolRegistry } from '../tools';
 import type { MemoryStore } from '../tools/memory/memory';
-import { LOCAL_MODE_PROMPT, PERSONALITY_PROMPT, contextPrompt } from '../core/personality/personality';
+import { PERSONALITY_PROMPT, contextPrompt } from '../core/personality/personality';
 import {
   OLLAMA_DEFAULT_MODEL,
   OLLAMA_DEFAULT_URL,
   OllamaAgent,
   isLoopbackUrl,
 } from '../integrations/ollama/ollama-agent';
-import { LANGUAGE_NAMES, type Lang } from '../shared/i18n';
+import { LANGUAGE_NAMES, translator, type Lang } from '../shared/i18n';
 import type { Settings } from './settings/schema';
 
 export interface AgentSetup {
@@ -34,7 +33,7 @@ export interface AgentSetup {
 }
 
 /**
- * Builds the tool and security stack and the agent. Claude Code works in the first project root;
+ * Builds the tool and security stack and the agent. It works in the first project root;
  * with none configured, in an empty `userData/workspace` folder (so it can't wander anywhere).
  */
 export function setUpAgent(
@@ -43,6 +42,7 @@ export function setUpAgent(
   memory: MemoryStore,
   lang: Lang = 'en',
 ): AgentSetup {
+  const t = translator(lang);
   const userData = app.getPath('userData');
   const env: PathEnv = {
     home: homedir(),
@@ -64,9 +64,10 @@ export function setUpAgent(
     defaultCwd: cwd,
     classify: classifyCommand,
     systemRoot: env.systemRoot,
-    // Approved commands don't get API keys or billing switches either (SECURITY.md §10).
-    env: () => subscriptionOnlyEnv(process.env),
+    // Approved commands don't get AI service keys (SECURITY.md §10).
+    env: () => commandEnv(process.env),
     memory,
+    web: { enabled: settings.internet, lang },
   });
   const audit = new AuditLog(join(userData, 'logs'));
   const policy = new PolicyEngine({
@@ -75,54 +76,35 @@ export function setUpAgent(
     env,
     projectRoots: roots,
     cwd,
-    web: settings.internet,
   });
   const runner = new ToolRunner(registry, policy, audit, broker);
 
   if (settings.agent === 'mock') return { provider: new MockAgent(), registry, runner };
 
-  const context = (internet: boolean) =>
+  const context = () =>
     contextPrompt({
       now: new Date(),
       language: LANGUAGE_NAMES[lang],
-      internet,
+      internet: settings.internet,
       timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     });
 
-  if (settings.agent === 'ollama') {
-    const provider = new OllamaAgent({
-      // Only loopback: the free mode keeps the conversation on this PC.
-      baseUrl:
-        settings.ollamaUrl && isLoopbackUrl(settings.ollamaUrl) ? settings.ollamaUrl : OLLAMA_DEFAULT_URL,
-      model: settings.ollamaModel || OLLAMA_DEFAULT_MODEL,
-      registry,
-      runner,
-      storeDir: join(userData, 'ollama'),
-      systemPrompt: () => PERSONALITY_PROMPT + LOCAL_MODE_PROMPT + context(false) + memory.promptSection(),
-    });
-    return { provider, registry, runner };
-  }
-
-  const executable = locateClaude(settings.claudeExecutable);
-  if (!executable) {
-    return {
-      provider: new MockAgent(),
-      registry,
-      runner,
-      problem:
-        "I can't find Claude Code, so I'm running on my practice script. Install it, or set claudeExecutable in settings.json.",
-    };
-  }
-  const provider = new ClaudeCodeAgent({
-    executable,
-    cwd,
+  const provider = new OllamaAgent({
+    // Only loopback: the conversation stays on this PC.
+    baseUrl:
+      settings.ollamaUrl && isLoopbackUrl(settings.ollamaUrl) ? settings.ollamaUrl : OLLAMA_DEFAULT_URL,
+    model: settings.ollamaModel || OLLAMA_DEFAULT_MODEL,
     registry,
-    policy,
     runner,
-    audit,
-    web: settings.internet,
-    extraPrompt: () => context(settings.internet) + memory.promptSection(),
-    ...(settings.claudeModel ? { model: settings.claudeModel } : {}),
+    storeDir: join(userData, 'ollama'),
+    texts: {
+      notRunning: (model) => t('ollama.notRunning', { model }),
+      notPulled: (model) => t('ollama.notPulled', { model }),
+      noTools: (model) => t('ollama.noTools', { model }),
+      said: (text) => t('ollama.said', { text }),
+      stopHere: t('ollama.stopHere'),
+    },
+    systemPrompt: () => PERSONALITY_PROMPT + context() + memory.promptSection(),
   });
   return { provider, registry, runner };
 }

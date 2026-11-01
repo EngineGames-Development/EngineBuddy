@@ -33,7 +33,7 @@ export type AgentEvent = Omit_<
 >;
 
 export interface AgentProvider {
-  readonly id: 'claude-code' | 'local' | 'mock';
+  readonly id: 'local' | 'mock';
   /** Run one turn. The iterable ends when the turn is over. Throwing = the turn failed. */
   startTurn(input: TurnInput, ctx: TurnContext): AsyncIterable<AgentEvent>;
   /** Stop the running turn as soon as possible. The iterable should end soon after. */
@@ -41,7 +41,7 @@ export interface AgentProvider {
   /** Optional: get ready in the background (e.g. start a warm session) before the first turn. */
   prewarm?(): Promise<void>;
   /**
-   * Optional: the provider's own ID for the current conversation (Claude Code's session ID), so
+   * Optional: the provider's own ID for the current conversation, so
    * the chat history can resume it later.
    */
   conversationId?(): string | undefined;

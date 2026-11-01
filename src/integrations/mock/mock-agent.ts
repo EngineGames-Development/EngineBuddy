@@ -1,5 +1,5 @@
 // MockAgent: plays scripted turns with realistic timing, so all UI work (avatar, bubble, menu)
-// runs without Claude and without spending tokens (docs/PHASE-1.md step 5). The scripts mirror
+// runs without a model at all (docs/PHASE-1.md step 5). The scripts mirror
 // the Phase 1 demo: a plain question, a system check, and a refused command.
 import type { AgentEvent, AgentProvider, TurnContext, TurnInput } from '../../core/agent/agent-provider';
 import { sleep } from '../../core/agent/sleep';
@@ -76,7 +76,8 @@ const PICTURE: Step[] = [
   { wait: 600, event: { type: 'thinking' } },
   {
     wait: 900,
-    stream: "Nice picture. I'm only the practice script, so I can't really see it, but Claude can.",
+    stream:
+      "Nice picture. I'm only the practice script, so I can't really see it, but the Ollama brain can, with a vision model like qwen2.5vl.",
   },
 ];
 

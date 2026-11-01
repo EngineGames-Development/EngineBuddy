@@ -1,15 +1,18 @@
 # CLAUDE.md
 
-EngineBuddy: a Windows desktop companion (Electron + TypeScript + React) whose brain is the user's
-installed Claude Code, via the Claude Agent SDK. Read ARCHITECTURE.md for the design and
+EngineBuddy: a Windows desktop companion (Electron + TypeScript + React) whose brain is a free,
+local model in the user's own Ollama (`src/integrations/ollama`). Read ARCHITECTURE.md for the design and
 SECURITY.md for the permission model before changing anything in `src/security`, `src/tools`,
 `src/main/ipc`, `src/preload` or the confirmation window.
 
 ## Hard rules
 
-- **Subscription only, never per-request billing.** Claude runs on the user's claude.ai login.
-  Keep the `apiKeySource === 'none'` check, the billing-env stripping (for Claude Code *and* for
-  `run_command`), and the regression tests. Never add an API-key option or `ClaudeApiAgent`.
+- **Free, local and fully licensed: no grey zones.** The only brain is a local Ollama model on
+  loopback (`isLoopbackUrl`). No cloud AI, no API keys, no claude.ai/ChatGPT logins, no scraping
+  of search engines or sites whose terms forbid it (web = public pages the user asks for, plus
+  Wikipedia's API with a descriptive User-Agent). Every bundled dependency must have a license
+  that allows redistribution (THIRD-PARTY-NOTICES.md). `run_command` keeps the AI-key stripping
+  (`security/command-env.ts`). When in doubt about terms or licenses, ask the user, don't guess.
 - **Default deny.** A tool not in the PolicyEngine table can't run. New tools need: a strict zod
   input, a `permission()` rule, an `activity()` line, and `describe()` if it can be CONFIRM.
 - **Nothing runs a shell built from model text** except `run_command`, and only after the user

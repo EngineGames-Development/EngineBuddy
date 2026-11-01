@@ -50,7 +50,7 @@ describe('chat and settings commands', () => {
     ).toBe(false);
     expect(settingsCommandSchema.safeParse({ type: 'add_root', path: 'C:\\' }).success).toBe(false);
     expect(
-      settingsCommandSchema.safeParse({ type: 'update', patch: { claudeModel: 'x; rm -rf' } }).success,
+      settingsCommandSchema.safeParse({ type: 'update', patch: { ollamaModel: 'x; rm -rf' } }).success,
     ).toBe(false);
   });
 });

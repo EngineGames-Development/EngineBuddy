@@ -1,5 +1,4 @@
 # Every push and pull request: typecheck, lint, format check and unit tests on Windows.
-# No Claude usage: the live integration test only runs with EB_INTEGRATION=1, which CI never sets.
 name: CI
 
 on:

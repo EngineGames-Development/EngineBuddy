@@ -74,7 +74,7 @@ if (!app.requestSingleInstanceLock()) {
     if (setup.problem) console.warn(`[main] ${setup.problem}`);
     console.log(`[main] agent: ${provider.id}`);
 
-    // Each conversation remembers Claude Code's session, so reopening it continues it.
+    // Each conversation remembers the agent's own conversation ID, so reopening it continues it.
     bus.on((event) => {
       if (event.type === 'turn_end') history.setAgentSessionId(provider.conversationId?.());
     });
@@ -88,7 +88,7 @@ if (!app.requestSingleInstanceLock()) {
     });
     avatar.win.once('show', () => {
       console.log(`[main] avatar shown ${sinceStart()} at`, avatar.avatarRect());
-      // Only now start Claude Code in the background, while the avatar greets you (~14 s cold,
+      // Only now start the agent in the background, while the avatar greets you (the old Claude Code brain took ~14 s cold,
       // spike 0b). Loading the SDK and spawning the process earlier delayed the window by seconds.
       // It continues the conversation you had open last time.
       const last = history.active.agentSessionId;
@@ -119,7 +119,7 @@ if (!app.requestSingleInstanceLock()) {
     const pushChat = () => chatWindow.send(IPC_CHANNELS.chat, { type: 'state', state: history.state() });
     history.onChange(pushChat);
 
-    // Point Claude Code at the active conversation, stopping whatever ran in the old one.
+    // Point the agent at the active conversation, stopping whatever ran in the old one.
     const followConversation = () => {
       agent.cancel();
       broker.denyAll();
@@ -133,7 +133,6 @@ if (!app.requestSingleInstanceLock()) {
       return {
         projectRoots: s.projectRoots,
         agent: s.agent,
-        claudeModel: s.claudeModel ?? '',
         ollamaModel: s.ollamaModel,
         bubbleDismissSeconds: s.bubbleDismissSeconds,
         voice: s.voice,
@@ -228,7 +227,6 @@ if (!app.requestSingleInstanceLock()) {
           const before = settings.get();
           settings.update({
             ...(patch.agent ? { agent: patch.agent } : {}),
-            ...(patch.claudeModel !== undefined ? { claudeModel: patch.claudeModel || undefined } : {}),
             ...(patch.ollamaModel !== undefined ? { ollamaModel: patch.ollamaModel } : {}),
             ...(patch.bubbleDismissSeconds ? { bubbleDismissSeconds: patch.bubbleDismissSeconds } : {}),
             ...(patch.voice ? { voice: patch.voice } : {}),
@@ -238,7 +236,6 @@ if (!app.requestSingleInstanceLock()) {
           const after = settings.get();
           if (
             before.agent !== after.agent ||
-            before.claudeModel !== after.claudeModel ||
             before.ollamaModel !== after.ollamaModel ||
             before.internet !== after.internet ||
             before.language !== after.language

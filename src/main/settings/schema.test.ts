@@ -8,9 +8,7 @@ describe('parseSettings', () => {
       positions: {},
       lastDisplayId: undefined,
       bubbleDismissSeconds: 12,
-      agent: 'claude-code',
-      claudeExecutable: undefined,
-      claudeModel: undefined,
+      agent: 'ollama',
       ollamaModel: '',
       ollamaUrl: '',
       projectRoots: [],
@@ -28,8 +26,6 @@ describe('parseSettings', () => {
       lastDisplayId: '7',
       bubbleDismissSeconds: 30,
       agent: 'mock',
-      claudeExecutable: 'D:\\claude.exe',
-      claudeModel: 'sonnet',
       ollamaModel: 'qwen3:8b',
       ollamaUrl: 'http://127.0.0.1:11434',
       projectRoots: ['D:\\code'],
@@ -53,5 +49,13 @@ describe('parseSettings', () => {
       rate: 1.5,
       pitch: 1,
     });
+  });
+});
+
+describe('upgrading from 0.3', () => {
+  it('turns the removed Claude brain into the free local one', () => {
+    const s = parseSettings({ agent: 'claude-code', claudeModel: 'sonnet' });
+    expect(s.agent).toBe('ollama');
+    expect('claudeModel' in s).toBe(false);
   });
 });

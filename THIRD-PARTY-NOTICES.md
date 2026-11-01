@@ -1,21 +1,25 @@
 # Third-party notices
 
-EngineBuddy's own source code is MIT licensed (see [LICENSE](LICENSE)). The app also uses, and its
-Windows builds contain, software by others under their own licenses:
+EngineBuddy's own source code is MIT licensed (see [LICENSE](LICENSE)). Its Windows builds also
+contain these, each under a license that allows redistribution:
 
 | Component | License | Notes |
 |---|---|---|
-| [Electron](https://www.electronjs.org/) (incl. Chromium, Node.js) | MIT; Chromium's components under their own licenses | Chromium's licenses ship with every build as `LICENSES.chromium.html` |
-| [React](https://react.dev/), React DOM | MIT | |
+| [Electron](https://www.electronjs.org/) (incl. Chromium, Node.js) | MIT; Chromium's parts under their own open-source licenses | Chromium's licenses ship with every build as `LICENSES.chromium.html` |
+| [React](https://react.dev/), React DOM (incl. scheduler) | MIT | |
 | [Zod](https://zod.dev/) | MIT | |
-| [Claude Agent SDK](https://www.npmjs.com/package/@anthropic-ai/claude-agent-sdk) | © Anthropic PBC, all rights reserved | Use is subject to Anthropic's legal agreements: https://code.claude.com/docs/en/legal-and-compliance. Not covered by EngineBuddy's MIT license. |
 
-Not included, installed by you if you want them:
+Not included, installed by you:
 
-- **Claude Code** (Anthropic): used under your own account and Anthropic's terms.
-- **Ollama** (MIT) and the model you download with it. Each model has its own license
-  (e.g. Qwen3: Apache 2.0; Llama: the Llama Community License). Check it before using a model
-  for anything commercial.
+- **[Ollama](https://ollama.com)**: MIT.
+- **The model you download with Ollama**: its own license, e.g. Qwen3 and Qwen2.5-VL: Apache 2.0;
+  Llama: the Llama Community License. Check it before using a model commercially.
 
-"Claude" and "Anthropic" are trademarks of Anthropic PBC; "Ollama" of its owners. EngineBuddy is
-an independent project and is not affiliated with or endorsed by them.
+Content EngineBuddy may show:
+
+- **Wikipedia** texts are licensed CC BY-SA 4.0; EngineBuddy names Wikipedia and links the article.
+  Wikipedia's API is used as its [User-Agent policy](https://foundation.wikimedia.org/wiki/Policy:User-Agent_policy) asks.
+- **Web pages** are read at your request, like a browser opening them, and only summarised for you.
+
+"Ollama", "Qwen", "Llama" and "Wikipedia" are trademarks of their owners. EngineBuddy is an
+independent project and is not affiliated with or endorsed by them.
