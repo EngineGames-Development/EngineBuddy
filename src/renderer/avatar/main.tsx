@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { AVATAR_BOX, AVATAR_OFFSET, WINDOW_BASE } from '../../shared/layout';
 import { SpeechBubble } from '../speech/SpeechBubble';
 import { Avatar } from './Avatar';
+import { playGreeting } from './greeting';
 import { installWindowInteraction } from './window-interaction';
 
 /** Main sizes the window to WINDOW_BASE × scale, so the scale is just our width over the base. */
@@ -20,11 +21,39 @@ function useWindowScale(): number {
 // Window settings main passes in the page URL (see main/windows/avatar-window.ts).
 const params = new URLSearchParams(window.location.search);
 const DISMISS_MS = Number(params.get('bubbleDismissMs')) || 12_000;
+const GREETING = parseLines(params.get('greeting'));
+const APP_START = Number(params.get('appStart')) || undefined;
+
+function parseLines(raw: string | null): string[] {
+  try {
+    const value: unknown = JSON.parse(raw ?? '[]');
+    return Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Cold start → first greeting line, recorded for the step 10 measurement. */
+function markGreeted(): void {
+  if (!APP_START) return;
+  const ms = Date.now() - APP_START;
+  document.documentElement.dataset['greetedAfterMs'] = String(ms);
+  console.info(`[avatar] greeting shown ${ms} ms after app start`);
+}
 
 function AvatarApp() {
   const scale = useWindowScale();
   const [openSignal, setOpenSignal] = useState(0);
   useEffect(() => installWindowInteraction({ onAvatarClick: () => setOpenSignal((n) => n + 1) }), []);
+  // The context menu's "Ask EngineBuddy".
+  useEffect(
+    () =>
+      window.buddy.onUi((request) => {
+        if (request.type === 'open_bubble') setOpenSignal((n) => n + 1);
+      }),
+    [],
+  );
+  useEffect(() => playGreeting(GREETING, markGreeted), []);
 
   return (
     <div

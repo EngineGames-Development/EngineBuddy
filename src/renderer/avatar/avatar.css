@@ -8,6 +8,17 @@ body,
   user-select: none;
 }
 
+/* Startup: fade in (the greeting follows, see greeting.ts). */
+#root {
+  animation: eb-fade-in 450ms ease-out both;
+}
+
+@keyframes eb-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
 /* Laid out at scale 1 and scaled as a whole, so every size below is in base DIPs. */
 .stage {
   position: absolute;

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { AVATAR_STATES, type AvatarState } from '../../shared/avatar';
 import { AvatarEngine } from './engine';
+import { onSay } from './greeting';
 import { reactionFor } from './reactions';
 import { SvgRig } from './rig';
 import { AvatarStateMachine } from './state-machine';
@@ -20,6 +21,11 @@ export function Avatar() {
       host.current?.setAttribute('data-state', state);
     });
     engine.start();
+
+    // Local lines (the greeting): wave on the first, talk on the rest.
+    const unsubscribeSay = onSay(({ first }) =>
+      machine.apply({ state: first ? 'EXCITED' : 'TALKING', priority: 1, hold: first ? 1300 : 1100 }),
+    );
 
     const unsubscribe = window.buddy.onEvent((event) => {
       if (event.type === 'mode_changed') return machine.setMode(event.mode);
@@ -42,6 +48,7 @@ export function Avatar() {
     return () => {
       window.removeEventListener('keydown', onKey);
       unsubscribe();
+      unsubscribeSay();
       machine.dispose();
       engine.dispose();
     };

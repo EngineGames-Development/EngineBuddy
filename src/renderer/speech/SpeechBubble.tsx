@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useReducer, useRef, useState, type FormEven
 import { MAX_INPUT_LENGTH } from '../../shared/commands';
 import { bubbleReducer, initialBubble, type Activity } from './bubble-model';
 import { MarkdownView } from './MarkdownView';
+import { onSay } from '../avatar/greeting';
 import { chooseSide, placeBubble, workAreaInWindow, type Side } from './placement';
 import './bubble.css';
 
@@ -38,6 +39,7 @@ export function SpeechBubble({ openSignal, dismissMs, scale }: Props) {
   const stickToBottom = useRef(true);
 
   useEffect(() => window.buddy.onEvent((event) => dispatch({ type: 'event', event })), []);
+  useEffect(() => onSay(({ text, append }) => dispatch({ type: 'say', text, append })), []);
 
   // Avatar click: open with the input focused. Focus once the open class has been committed,
   // because a `visibility: hidden` input can't take focus.

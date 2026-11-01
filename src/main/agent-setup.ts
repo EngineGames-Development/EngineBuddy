@@ -3,6 +3,7 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { app } from 'electron';
 import type { AgentProvider } from '../core/agent/agent-provider';
+import type { ToolRegistry } from '../core/tools/tool-def';
 import { ClaudeCodeAgent } from '../integrations/claude-code/claude-code-agent';
 import { locateClaude } from '../integrations/claude-code/environment';
 import { MockAgent } from '../integrations/mock/mock-agent';
@@ -15,6 +16,7 @@ import type { Settings } from './settings/schema';
 
 export interface AgentSetup {
   provider: AgentProvider;
+  registry: ToolRegistry;
   runner: ToolRunner;
   /** Why the real agent couldn't be used, if it fell back to the mock. */
   problem?: string;
@@ -47,12 +49,13 @@ export function setUpAgent(settings: Readonly<Settings>): AgentSetup {
   const policy = new PolicyEngine({ registry, secrets: new SecretPaths(env), env, projectRoots: roots, cwd });
   const runner = new ToolRunner(registry, policy, audit);
 
-  if (settings.agent === 'mock') return { provider: new MockAgent(), runner };
+  if (settings.agent === 'mock') return { provider: new MockAgent(), registry, runner };
 
   const executable = locateClaude(settings.claudeExecutable);
   if (!executable) {
     return {
       provider: new MockAgent(),
+      registry,
       runner,
       problem:
         "I can't find Claude Code, so I'm running on my practice script. Install it, or set claudeExecutable in settings.json.",
@@ -67,5 +70,5 @@ export function setUpAgent(settings: Readonly<Settings>): AgentSetup {
     audit,
     ...(settings.claudeModel ? { model: settings.claudeModel } : {}),
   });
-  return { provider, runner };
+  return { provider, registry, runner };
 }

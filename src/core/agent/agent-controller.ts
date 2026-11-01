@@ -4,7 +4,7 @@
 // provider can't forget them.
 import type { DesktopMode, TurnOutcome } from '../../shared/events';
 import type { EventBus } from '../events/event-bus';
-import type { AgentProvider, TurnInput } from './agent-provider';
+import type { AgentEvent, AgentProvider, TurnContext, TurnInput } from './agent-provider';
 
 const MAX_QUEUE = 3;
 
@@ -17,6 +17,18 @@ export interface ControllerOptions {
 interface ActiveTurn {
   turnId: string;
   cancelled: boolean;
+  local: boolean;
+}
+
+/**
+ * A turn that doesn't need the model: a deterministic action (e.g. the menu's "Open in VS Code…")
+ * that still runs as a turn, so the bubble, avatar and audit see it like any other.
+ */
+export type LocalTurn = (ctx: TurnContext & { signal: AbortSignal }) => AsyncIterable<AgentEvent>;
+
+interface Pending {
+  input: TurnInput;
+  local?: LocalTurn;
 }
 
 let counter = 0;
@@ -27,7 +39,8 @@ export class AgentController {
   private readonly provider: AgentProvider;
   private readonly newTurnId: () => string;
   private active: ActiveTurn | undefined;
-  private readonly queue: TurnInput[] = [];
+  private readonly queue: Pending[] = [];
+  private localAbort: AbortController | undefined;
   private mode: DesktopMode = 'companion';
   private idleWaiters: Array<() => void> = [];
 
@@ -45,7 +58,8 @@ export class AgentController {
     this.mode = mode;
   }
 
-  submit(input: TurnInput): void {
+  /** Run a turn. With `local`, the events come from it instead of the provider. */
+  submit(input: TurnInput, local?: LocalTurn): void {
     if (this.mode === 'sleep') {
       this.bus.emit({
         type: 'agent_error',
@@ -54,10 +68,11 @@ export class AgentController {
       });
       return;
     }
+    const pending: Pending = local ? { input, local } : { input };
     if (!this.active) {
-      void this.run(input);
+      void this.run(pending);
     } else if (this.queue.length < MAX_QUEUE) {
-      this.queue.push(input);
+      this.queue.push(pending);
     } else {
       this.bus.emit({
         type: 'agent_error',
@@ -77,6 +92,10 @@ export class AgentController {
     if (!turn || turn.cancelled) return;
     turn.cancelled = true;
     this.bus.emit({ type: 'turn_end', turnId: turn.turnId, outcome: 'cancelled' });
+    if (turn.local) {
+      this.localAbort?.abort();
+      return;
+    }
     this.provider
       .cancel(turn.turnId)
       .catch((error: unknown) => console.warn('[agent] cancel failed:', error));
@@ -88,15 +107,19 @@ export class AgentController {
     return new Promise((resolve) => this.idleWaiters.push(resolve));
   }
 
-  private async run(input: TurnInput): Promise<void> {
-    const turn: ActiveTurn = { turnId: this.newTurnId(), cancelled: false };
+  private async run({ input, local }: Pending): Promise<void> {
+    const turn: ActiveTurn = { turnId: this.newTurnId(), cancelled: false, local: local !== undefined };
     const { turnId } = turn;
     this.active = turn;
     this.bus.emit({ type: 'turn_start', turnId, source: input.source });
 
     let outcome: TurnOutcome = 'ok';
     try {
-      for await (const event of this.provider.startTurn(input, { turnId, mode: this.mode })) {
+      const ctx: TurnContext = { turnId, mode: this.mode };
+      const abort = new AbortController();
+      this.localAbort = local ? abort : undefined;
+      const events = local ? local({ ...ctx, signal: abort.signal }) : this.provider.startTurn(input, ctx);
+      for await (const event of events) {
         if (turn.cancelled) continue; // drain quietly until the provider stops
         if (event.type === 'agent_error') outcome = 'error';
         this.bus.emit({ ...event, turnId });

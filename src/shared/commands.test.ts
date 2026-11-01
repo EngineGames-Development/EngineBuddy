@@ -35,6 +35,7 @@ describe('windowCommandSchema', () => {
     expect(accepts(windowCommandSchema, { type: 'move_by', dx: -12, dy: 7 })).toBe(true);
     expect(accepts(windowCommandSchema, { type: 'drag_end' })).toBe(true);
     expect(accepts(windowCommandSchema, { type: 'scale_by', steps: -1 })).toBe(true);
+    expect(accepts(windowCommandSchema, { type: 'context_menu' })).toBe(true);
   });
 
   it.each([

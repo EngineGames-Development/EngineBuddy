@@ -34,6 +34,8 @@ export const windowCommandSchema = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal('drag_end') }),
   /** Ctrl+scroll: grow or shrink by whole scale steps. */
   z.strictObject({ type: z.literal('scale_by'), steps: z.number().int().min(-4).max(4) }),
+  /** Right-click on the avatar: main pops up the context menu at the cursor. */
+  z.strictObject({ type: z.literal('context_menu') }),
 ]);
 
 export type WindowCommand = z.infer<typeof windowCommandSchema>;

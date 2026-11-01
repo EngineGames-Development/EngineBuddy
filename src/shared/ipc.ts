@@ -10,7 +10,15 @@ export const IPC_CHANNELS = {
   command: 'buddy:command',
   /** renderer → main: a WindowCommand for the sender's own window (validated in main). */
   window: 'buddy:window',
+  /** main → one renderer: a UiRequest for that window only (e.g. open the bubble). */
+  ui: 'buddy:ui',
 } as const;
+
+/**
+ * Requests from main to one window's UI. Unlike BuddyEvents these aren't facts for everyone;
+ * they ask a specific window to do something (the context menu's "Ask EngineBuddy").
+ */
+export type UiRequest = { type: 'open_bubble' };
 
 /**
  * Everything a renderer can do, exposed as `window.buddy` by the preload. Nothing else crosses
@@ -19,6 +27,8 @@ export const IPC_CHANNELS = {
 export interface BuddyApi {
   /** Subscribe to BuddyEvents. Returns an unsubscribe function. */
   onEvent(listener: (event: BuddyEvent) => void): () => void;
+  /** Subscribe to UiRequests for this window. Returns an unsubscribe function. */
+  onUi(listener: (request: UiRequest) => void): () => void;
   /** Ask main to do something (send a message, cancel the turn, ...). Fire-and-forget. */
   send(command: BuddyCommand): void;
   /** Control the window this renderer lives in. */
@@ -27,5 +37,7 @@ export interface BuddyApi {
     moveBy(dx: number, dy: number): void;
     dragEnd(): void;
     scaleBy(steps: number): void;
+    /** Right-click on the avatar: main shows the context menu. */
+    openContextMenu(): void;
   };
 }

@@ -24,7 +24,12 @@ export interface BubbleState {
   pendingPrompts: string[];
 }
 
-export type BubbleAction = { type: 'event'; event: BuddyEvent } | { type: 'open' } | { type: 'close' };
+export type BubbleAction =
+  | { type: 'event'; event: BuddyEvent }
+  | { type: 'open' }
+  | { type: 'close' }
+  /** A local line (the greeting): shown like a reply, outside any turn. */
+  | { type: 'say'; text: string; append: boolean };
 
 export const initialBubble: BubbleState = {
   open: false,
@@ -46,6 +51,13 @@ function newBlock(text: string): string {
 export function bubbleReducer(state: BubbleState, action: BubbleAction): BubbleState {
   if (action.type === 'open') return { ...state, open: true };
   if (action.type === 'close') return { ...state, open: false };
+  if (action.type === 'say') {
+    // Never talk over a real turn.
+    if (state.busy) return state;
+    const text =
+      action.append && !state.turnId && state.text ? `${state.text}\n\n${action.text}` : action.text;
+    return { ...initialBubble, pendingPrompts: state.pendingPrompts, open: true, text };
+  }
 
   const e = action.event;
   switch (e.type) {

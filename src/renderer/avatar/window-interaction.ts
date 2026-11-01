@@ -72,6 +72,12 @@ export function installWindowInteraction(handlers: InteractionHandlers = {}): ()
     drag = undefined;
   };
 
+  // --- right-click: main shows the native context menu ------------------------------------------
+  const onContextMenu = (e: MouseEvent) => {
+    e.preventDefault();
+    if ((e.target as Element | null)?.closest('[data-drag]')) api.openContextMenu();
+  };
+
   // --- Ctrl+scroll scale -----------------------------------------------------------------------
   const onWheel = (e: WheelEvent) => {
     if (!e.ctrlKey) return;
@@ -88,6 +94,7 @@ export function installWindowInteraction(handlers: InteractionHandlers = {}): ()
   document.addEventListener('pointerup', onPointerUp);
   document.addEventListener('pointercancel', onPointerCancel);
   document.addEventListener('wheel', onWheel, { passive: false });
+  document.addEventListener('contextmenu', onContextMenu);
 
   return () => {
     document.removeEventListener('mousemove', onMouseMove);
@@ -97,5 +104,6 @@ export function installWindowInteraction(handlers: InteractionHandlers = {}): ()
     document.removeEventListener('pointerup', onPointerUp);
     document.removeEventListener('pointercancel', onPointerCancel);
     document.removeEventListener('wheel', onWheel);
+    document.removeEventListener('contextmenu', onContextMenu);
   };
 }

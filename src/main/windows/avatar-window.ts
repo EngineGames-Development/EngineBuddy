@@ -9,6 +9,7 @@ import {
   type Point,
 } from '../../core/window/placement';
 import type { WindowCommand } from '../../shared/commands';
+import { IPC_CHANNELS, type UiRequest } from '../../shared/ipc';
 import { AVATAR_BOX, AVATAR_OFFSET, SCALE_STEP, WINDOW_BASE, clampScale } from '../../shared/layout';
 import type { SettingsStore } from '../settings/settings-store';
 import { forwardRendererProblems, loadRenderer } from './renderer-url';
@@ -27,7 +28,11 @@ export class AvatarWindow {
   private scale: number;
   private snapTimer: ReturnType<typeof setInterval> | undefined;
 
-  constructor(private readonly settings: SettingsStore) {
+  /** `page` is passed to the renderer in its URL query (read-only startup data, e.g. the greeting). */
+  constructor(
+    private readonly settings: SettingsStore,
+    page: Record<string, string> = {},
+  ) {
     this.scale = clampScale(settings.get().scale);
     const displays = screen.getAllDisplays();
     const spot = restoreSpot({
@@ -79,6 +84,7 @@ export class AvatarWindow {
     forwardRendererProblems(this.win, 'avatar');
     void loadRenderer(this.win, 'avatar', {
       bubbleDismissMs: String(settings.get().bubbleDismissSeconds * 1000),
+      ...page,
     });
   }
 
@@ -101,7 +107,20 @@ export class AvatarWindow {
       case 'scale_by':
         this.setScale(this.scale + command.steps * SCALE_STEP);
         break;
+      case 'context_menu':
+        this.onContextMenu?.();
+        break;
     }
+  }
+
+  /** Set by main: what a right-click on the avatar does. */
+  onContextMenu: (() => void) | undefined;
+
+  /** Bring the window forward with keyboard focus and ask the renderer to open the bubble. */
+  openBubble(): void {
+    this.setVisible(true);
+    this.win.focus();
+    this.win.webContents.send(IPC_CHANNELS.ui, { type: 'open_bubble' } satisfies UiRequest);
   }
 
   get visible(): boolean {

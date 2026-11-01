@@ -1,5 +1,5 @@
 import type { BuddyEvent } from '../shared/events';
-import { IPC_CHANNELS, type BuddyApi } from '../shared/ipc';
+import { IPC_CHANNELS, type BuddyApi, type UiRequest } from '../shared/ipc';
 
 /** The slice of Electron's ipcRenderer the API needs. Injected so the API can be unit-tested. */
 export interface RendererIpc {
@@ -17,6 +17,11 @@ export function createBuddyApi(ipc: RendererIpc): BuddyApi {
       ipc.on(IPC_CHANNELS.event, handler);
       return () => ipc.removeListener(IPC_CHANNELS.event, handler);
     },
+    onUi(listener: (request: UiRequest) => void) {
+      const handler = (_event: unknown, payload: unknown) => listener(payload as UiRequest);
+      ipc.on(IPC_CHANNELS.ui, handler);
+      return () => ipc.removeListener(IPC_CHANNELS.ui, handler);
+    },
     send(command) {
       ipc.send(IPC_CHANNELS.command, command);
     },
@@ -32,6 +37,9 @@ export function createBuddyApi(ipc: RendererIpc): BuddyApi {
       },
       scaleBy(steps: number) {
         ipc.send(IPC_CHANNELS.window, { type: 'scale_by', steps });
+      },
+      openContextMenu() {
+        ipc.send(IPC_CHANNELS.window, { type: 'context_menu' });
       },
     }),
   } satisfies BuddyApi);

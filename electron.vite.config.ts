@@ -34,6 +34,10 @@ export default defineConfig({
     root: resolve(__dirname, 'src/renderer'),
     plugins: [react(), devCsp()],
     build: {
+      // Minified: parsing 570 kB of unminified React measurably delayed the window's first paint
+      // (docs/decisions/011-menu-and-startup.md). Source maps keep stack traces readable.
+      minify: true,
+      sourcemap: true,
       rollupOptions: {
         input: { avatar: resolve(__dirname, 'src/renderer/avatar/index.html') },
       },

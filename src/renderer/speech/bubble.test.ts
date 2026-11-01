@@ -93,6 +93,17 @@ describe('bubbleReducer', () => {
     expect(s.narration).toBe('Stopped.');
   });
 
+  it('shows local lines (the greeting) one after another', () => {
+    let s = bubbleReducer(initialBubble, { type: 'say', text: 'Hey.', append: false });
+    s = bubbleReducer(s, { type: 'say', text: 'What are we building today?', append: true });
+    expect(s).toMatchObject({ open: true, busy: false, text: 'Hey.\n\nWhat are we building today?' });
+  });
+
+  it('never talks over a running turn', () => {
+    const s = run([{ type: 'turn_start', turnId: 't1', source: 'bubble' }]);
+    expect(bubbleReducer(s, { type: 'say', text: 'Hey.', append: false })).toBe(s);
+  });
+
   it('opens for an error, even outside a turn', () => {
     const s = run([{ type: 'agent_error', message: "I'm paused.", recoverable: true }]);
     expect(s).toMatchObject({ open: true, error: "I'm paused." });
