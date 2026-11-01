@@ -1,5 +1,8 @@
 import { join } from 'node:path';
 import { app } from 'electron';
+import { AgentController } from '../core/agent/agent-controller';
+import { EventBus } from '../core/events/event-bus';
+import { MockAgent } from '../integrations/mock/mock-agent';
 import type { BuddyCommand } from '../shared/commands';
 import { broadcastEvent } from './ipc/broadcast';
 import { registerIpc } from './ipc/ipc-router';
@@ -8,15 +11,21 @@ import { SettingsStore } from './settings/settings-store';
 import { createTray } from './tray';
 import { AvatarWindow } from './windows/avatar-window';
 
-// Until the AgentController exists (Step 5), commands only become events: the user's message is
-// broadcast as a `user_input` fact, so every window sees it. Nothing answers yet.
+const bus = new EventBus();
+bus.on(broadcastEvent);
+
+// Step 5: the MockAgent answers, so the whole UI path works without Claude. Step 8 swaps in
+// ClaudeCodeAgent behind the same interface.
+const agent = new AgentController({ bus, provider: new MockAgent() });
+
 function handleCommand(command: BuddyCommand): void {
   switch (command.type) {
     case 'user_input':
-      broadcastEvent({ type: 'user_input', text: command.text, source: command.source });
+      bus.emit({ type: 'user_input', text: command.text, source: command.source });
+      agent.submit({ text: command.text, source: command.source });
       break;
     case 'cancel_turn':
-      console.log('[main] cancel_turn: no turn is running (AgentController arrives in Step 5)');
+      agent.cancel();
       break;
   }
 }
@@ -33,11 +42,14 @@ if (!app.requestSingleInstanceLock()) {
     const avatar = new AvatarWindow(settings);
     avatar.win.once('show', () => console.log('[main] avatar shown at', avatar.avatarRect()));
 
-    // Pause = the Sleep mode: the avatar sleeps and (from Step 5) no turns run.
+    // Pause = the Sleep mode: the avatar sleeps and the controller refuses new turns.
     let paused = false;
     const setPaused = (value: boolean) => {
       paused = value;
-      broadcastEvent({ type: 'mode_changed', mode: paused ? 'sleep' : 'companion' });
+      const mode = paused ? 'sleep' : 'companion';
+      if (paused) agent.cancel();
+      agent.setMode(mode);
+      bus.emit({ type: 'mode_changed', mode });
     };
 
     registerIpc(handleCommand, (command, from) => {
