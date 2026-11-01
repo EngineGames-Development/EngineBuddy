@@ -96,7 +96,8 @@ scope: an attacker who already runs code as you.
   (outside/`..`/`.env`/stream/`.git`/SSH key refused, binary refused, `.git` not listed). Live
   against the real internet: a Wikipedia search returned German summaries, nodejs.org was read,
   `localtest.me` (resolves to 127.0.0.1) was refused. 293 tests pass; `npm audit --omit=dev`: 0.
-- Old tags v0.1.0–v0.3.0 (which pointed at the Claude Code versions) were deleted from GitHub.
+- Old tags v0.1.0–v0.3.0 point at the Claude Code versions; deleting them on GitHub is left to
+  the owner (destructive Git action).
 - Live test (2026-11-01, built app, the user's Ollama 0.40.13): without the configured model the
   chat explains `ollama pull`; with `qwen2.5-coder:1.5b` replies stream and conversations are
   stored, but that model doesn't call tools reliably (also seen calling Ollama directly), so the
