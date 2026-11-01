@@ -46,6 +46,10 @@ describe('file tools: policy', () => {
     ['climbing out', 'C:\\proj\\..\\other\\file.txt'],
     ['a .env file', 'C:\\proj\\.env'],
     ['a .env.local file', 'C:\\proj\\.env.local'],
+    ['.env with a trailing dot', 'C:\\proj\\.env.'],
+    ['.env via an alternate data stream', 'C:\\proj\\.ENV::$DATA'],
+    ['a git hook', 'C:\\proj\\.git\\hooks\\pre-commit'],
+    ['git config via a trailing space', 'C:\\proj\\.git \\config'],
     ['an SSH key', 'C:\\Users\\me\\.ssh\\id_ed25519'],
   ])('refuses %s', (_label, path) => {
     expect(edit(path)).toBe('BLOCKED (denied)');

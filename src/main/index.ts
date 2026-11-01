@@ -155,6 +155,7 @@ if (!app.requestSingleInstanceLock()) {
       bus.emit({ type: 'mode_changed', mode });
     };
 
+    let lastScreenshot = 0;
     const handleCommand = (command: BuddyCommand, from: BrowserWindow): void => {
       switch (command.type) {
         case 'user_input':
@@ -187,7 +188,11 @@ if (!app.requestSingleInstanceLock()) {
         }
         case 'take_screenshot':
           // Only the chat window has the camera button; it's hidden for the capture.
-          if (!chatWindow.owns(from.webContents)) return;
+          // A click means the window has focus; a page acting on its own gets at most one picture
+          // every few seconds, and only of what you're looking at anyway (docs/security-audit.md, F9).
+          if (!chatWindow.owns(from.webContents) || !from.isFocused()) return;
+          if (Date.now() - lastScreenshot < 3000) return;
+          lastScreenshot = Date.now();
           takeScreenshot(from)
             .then((image) => chatWindow.send(IPC_CHANNELS.chat, { type: 'attachment', image }))
             .catch((error: unknown) => {

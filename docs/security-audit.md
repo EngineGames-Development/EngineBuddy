@@ -48,6 +48,10 @@ scope: an attacker who already runs code as you.
 | F5 | Medium | Electron fuses not set (SECURITY.md §7): a packaged build would honour `ELECTRON_RUN_AS_NODE`, `NODE_OPTIONS` and `--inspect`, letting anyone who can start it run arbitrary Node code as the app. | Fuses set in `electron-builder.yml`; verified on the built exe with `@electron/fuses read` (RunAsNode, NODE_OPTIONS, CLI inspect off; asar integrity + only-load-from-asar on) | Fixed (decision 014) |
 | F7 | Low | Recorded transcripts in the repo contain local paths (app install ID, session folder names), CPU model and RAM size. | Paths and CPU name replaced with placeholders in `test/fixtures`; `spikes/` removed | Fixed (decision 014) |
 | F8 | Info | Every commit's author email (`LeanderGamer2@web.de`) becomes public on push. | History rewritten to EngineGames-Development@web.de (your choice) before the first push | Resolved |
+| F9 | Medium | The chat page could ask main for screenshots on its own (no click needed), e.g. if a rendering bug let model text run script. | Main takes one only when the chat window has focus, at most one every 3 s; the picture lands in the composer for you to see, never sent by itself | Fixed |
+| F10 | Medium | File-edit rules compared raw names: `.env.`, `.ENV::$DATA` and `.git \config` slip past, and `.git/hooks` turns a file edit into a delayed command. | Names are compared the way Windows resolves them (trailing dots/spaces, streams); anything under `.git` is refused | Fixed |
+| F11 | Low | `edit_file` read the whole file in main's event loop while building the confirmation. | Files over 2 MB aren't read for the diff (and can't be edited) | Fixed |
+| F12 | Info | `npm audit`: 26 moderate findings, all one minimatch ReDoS (GHSA-g3hv-75wg-m249) in build tools (electron-builder). Runtime dependencies: 0. | Not shipped in the app, and only fed our own build patterns. Recheck when electron-builder updates | Accepted |
 
 ## Accepted residual risks
 
@@ -89,6 +93,10 @@ scope: an attacker who already runs code as you.
   except memory notes (as text nodes). Folders are added only via Windows' folder picker in main.
 - Screenshots are taken by main (`desktopCapturer`) on your click; pages still get no media
   permissions (F1 unchanged).
+- Live test (2026-11-01, built app, real Claude): screenshot, drop and paste attach pictures;
+  Claude read a sent picture correctly; write_file showed its diff, ran after Allow, didn't after
+  Cancel (and Claude didn't retry around it); `remember` stored a note visible in Settings; the
+  Windows voices speak. History survived a restart and resumed the conversation.
 - Images are re-validated in main (type, signature, size) before reaching Claude or the history.
 
 ## How to re-run this audit

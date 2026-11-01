@@ -4,7 +4,7 @@
 //
 // edit_file replaces one exact piece of text that must occur exactly once, and checks that again
 // when it runs: if the file changed in between, nothing is written.
-import { readFileSync } from 'node:fs';
+import { readFileSync, statSync } from 'node:fs';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { basename, dirname, resolve } from 'node:path';
 import { z } from 'zod';
@@ -39,8 +39,19 @@ const editInput = z.object({
 function filePermission(p: string, ctx: PolicyContext): PermissionVerdict {
   if (ctx.isSecretPath(p))
     return { permission: 'BLOCKED', reason: "Not touching that. It's where secrets live." };
-  if (/(^|[\\/])\.env(\.[^\\/]*)?$/i.test(p))
+  // Windows ignores trailing dots and spaces, and `name:stream` writes to the same file, so
+  // compare the names the way Windows will resolve them.
+  const segments = p.split(/[\\/]+/).map((s) =>
+    s
+      .replace(/:.*$/, '')
+      .replace(/[. ]+$/, '')
+      .toLowerCase(),
+  );
+  if (/^\.env(\..*)?$/.test(segments.at(-1) ?? ''))
     return { permission: 'BLOCKED', reason: "I don't change .env files. Do that one yourself." };
+  // Git runs files in .git (hooks, config) on its own later: an edit there is a delayed command.
+  if (segments.includes('.git'))
+    return { permission: 'BLOCKED', reason: "I don't touch .git. Files in there can run code later." };
   if (!ctx.isInProject(p))
     return {
       permission: 'BLOCKED',
@@ -51,6 +62,8 @@ function filePermission(p: string, ctx: PolicyContext): PermissionVerdict {
 
 function readText(full: string): string | undefined {
   try {
+    // describe() runs in main's event loop: don't block it reading something huge.
+    if (statSync(full).size > MAX_FILE_BYTES) return undefined;
     return readFileSync(full, 'utf8');
   } catch {
     return undefined;

@@ -38,5 +38,5 @@
 - Live, built app with real Claude: chat and settings windows open and render; a picture sent from
   the chat window was read correctly ("HALLO" in white on red); the conversation was saved to
   `userData/history`.
-- Not yet checked by hand: the 📷 button, drag and drop, the diff confirmation with a real edit,
-  hearing the voice.
+- Live (CDP-driven, no real mouse): 📷, drop, paste, the diff confirmation with Allow and Cancel,
+  memory and voice all work; see docs/security-audit.md (F9–F12) for the follow-up review.
