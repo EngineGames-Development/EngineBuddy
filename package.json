@@ -14,7 +14,9 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "check": "npm run typecheck && npm run lint && npm run format:check && npm test"
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm test",
+    "dist": "npm run build && electron-builder --win",
+    "icon": "node scripts/make-icon.mjs"
   },
   "engines": {
     "node": ">=22.18"
@@ -26,6 +28,7 @@
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.1.2",
     "electron": "45.2.1",
+    "electron-builder": "26.17.0",
     "electron-vite": "6.0.0",
     "eslint": "10.14.0",
     "eslint-import-resolver-typescript": "4.4.5",
@@ -41,5 +44,7 @@
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "zod": "4.6.7"
-  }
+  },
+  "author": "EngineGames-Development",
+  "license": "UNLICENSED"
 }

@@ -2,7 +2,7 @@
   {
     "type": "system",
     "subtype": "init",
-    "cwd": "<HOME>\\AppData\\Local\\Claude-Data\\claude_pzs8sxrjxfjjc\\scratch-workspaces\\58172196-5e3d-475b-8a8b-d12e9752b69e\\75b04314-d321-4345-8bd4-42a5e49281b3\\scratch-2026-10-31-6bde1e\\spikes\\agent\\sandbox",
+    "cwd": "<HOME>\\projects\\enginebuddy\\spikes\\agent\\sandbox",
     "session_id": "83178651-1ea7-4375-8d6f-07662734301e",
     "tools": ["Bash", "Glob", "Grep", "Read", "mcp__enginebuddy__get_system_info"],
     "mcp_servers": [
@@ -136,10 +136,10 @@
     "product_feedback_disabled": false,
     "uuid": "dcd88ee7-b54d-4e96-a314-5c6a73069ef3",
     "memory_paths": {
-      "auto": "<HOME>\\.claude\\projects\\<HOME-DASHED>-AppData-Local-Claude-Data-claude-pzs8sxrjxfjjc-scratch-workspaces-58172196-5e3d-475b-8a8b-d12e9752b69e-75b04314-d321-4345-8bd4-42a5e49281b3-scratch-2026-10-31-6bde1e-spikes-agent-sandbo-1bukwl\\memory\\"
+      "auto": "<HOME>\\.claude\\projects\\<HOME-DASHED>-projects-enginebuddy\\memory\\"
     },
-    "scratchpad_path": "<HOME>\\AppData\\Local\\Temp\\claude\\<HOME-DASHED>-AppData-Local-Claude-Data-claude-pzs8sxrjxfjjc-scratch-workspaces-58172196-5e3d-475b-8a8b-d12e9752b69e-75b04314-d321-4345-8bd4-42a5e49281b3-scratch-2026-10-31-6bde1e-spikes-agent-sandbo-1bukwl\\83178651-1ea7-4375-8d6f-07662734301e\\scratchpad",
-    "original_cwd": "<HOME>\\AppData\\Local\\Claude-Data\\claude_pzs8sxrjxfjjc\\scratch-workspaces\\58172196-5e3d-475b-8a8b-d12e9752b69e\\75b04314-d321-4345-8bd4-42a5e49281b3\\scratch-2026-10-31-6bde1e\\spikes\\agent\\sandbox",
+    "scratchpad_path": "<HOME>\\AppData\\Local\\Temp\\claude\\<HOME-DASHED>-projects-enginebuddy\\83178651-1ea7-4375-8d6f-07662734301e\\scratchpad",
+    "original_cwd": "<HOME>\\projects\\enginebuddy\\spikes\\agent\\sandbox",
     "additional_directories": [],
     "messaging_socket_path": "\\\\.\\pipe\\LOCAL\\cc-msg-724a190410d26ca64fde51f3c738546b",
     "fast_mode_state": "off",
@@ -476,7 +476,7 @@
           "content": [
             {
               "type": "text",
-              "text": "{\"cpu\":\"AMD Ryzen 3 3200G with Radeon Vega Graphics    \",\"cores\":4,\"memUsedGB\":13.2,\"memTotalGB\":13.9,\"uptimeH\":6.5}"
+              "text": "{\"cpu\":\"Example CPU\",\"cores\":4,\"memUsedGB\":13.2,\"memTotalGB\":13.9,\"uptimeH\":6.5}"
             }
           ]
         }
@@ -489,7 +489,7 @@
     "tool_use_result": [
       {
         "type": "text",
-        "text": "{\"cpu\":\"AMD Ryzen 3 3200G with Radeon Vega Graphics    \",\"cores\":4,\"memUsedGB\":13.2,\"memTotalGB\":13.9,\"uptimeH\":6.5}"
+        "text": "{\"cpu\":\"Example CPU\",\"cores\":4,\"memUsedGB\":13.2,\"memTotalGB\":13.9,\"uptimeH\":6.5}"
       }
     ],
     "tool_result_meta": [

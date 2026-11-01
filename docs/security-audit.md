@@ -11,7 +11,7 @@ anything important.
 | | Count |
 |---|---|
 | Fixed during this audit | 4 (F1–F4) |
-| Fixed in the GitHub-readiness step | 3 (F5, F7, F8; see "Status" column) |
+| Fixed in the GitHub-readiness step | 2 (F5, F7); F8 is your call |
 | Accepted residual risks, documented | 8 (R1–R8) |
 | Tests guarding security behaviour | ~110 of 205 |
 
@@ -45,8 +45,8 @@ scope: an attacker who already runs code as you.
 | F2 | Low | The default application menu stayed active: Ctrl+Shift+I opened DevTools and Ctrl+R reloaded any window, including the confirmation window. | `Menu.setApplicationMenu(null)` | Fixed |
 | F3 | Medium | `open_application` (SAFE, no click): Windows Terminal treats `;` in its arguments as a command separator, and Explorer splits arguments on commas. A folder named e.g. `x; new-tab cmd /c …` (from a cloned repo, say) could have turned "open a terminal here" into running a command. | Folders containing `;` or `,` are refused for these apps; test added | Fixed |
 | F4 | Medium | Approved commands inherited EngineBuddy's whole environment, including any `ANTHROPIC_API_KEY`: an approved command could print it into the conversation, or run `claude` billed per request. | `run_command` gets the subscription-only environment; `ELECTRON_RUN_AS_NODE` removed; test added | Fixed |
-| F5 | Medium | Electron fuses not set (SECURITY.md §7): a packaged build would honour `ELECTRON_RUN_AS_NODE`, `NODE_OPTIONS` and `--inspect`, letting anyone who can start it run arbitrary Node code as the app. | Set fuses at packaging time | Fixed in the GitHub step |
-| F7 | Low | Recorded transcripts in the repo contain local paths (app install ID, session folder names), CPU model and RAM size. | Scrubbed before publishing; spikes removed | Fixed in the GitHub step |
+| F5 | Medium | Electron fuses not set (SECURITY.md §7): a packaged build would honour `ELECTRON_RUN_AS_NODE`, `NODE_OPTIONS` and `--inspect`, letting anyone who can start it run arbitrary Node code as the app. | Fuses set in `electron-builder.yml`; verified on the built exe with `@electron/fuses read` (RunAsNode, NODE_OPTIONS, CLI inspect off; asar integrity + only-load-from-asar on) | Fixed (decision 014) |
+| F7 | Low | Recorded transcripts in the repo contain local paths (app install ID, session folder names), CPU model and RAM size. | Paths and CPU name replaced with placeholders in `test/fixtures`; `spikes/` removed | Fixed (decision 014) |
 | F8 | Info | Every commit's author email (`LeanderGamer2@web.de`) becomes public on push. | Documented in README; your call whether to rewrite or use GitHub's no-reply address | Your decision |
 
 ## Accepted residual risks

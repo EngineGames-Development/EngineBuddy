@@ -469,7 +469,7 @@ enginebuddy/
 
 1. ~~Auth~~: decided. Subscription login only, never billed (§6.2, D8).
 2. **Project roots:** which folders hold your projects (SecureOS, Engine's Compiler, EASM, ...)? Phase 1 only needs one for the "Read inside project roots" rule.
-3. **Where this repo lives:** right now it's in a temporary folder for this session.
+3. ~~Where this repo lives~~: decided. `Documents\EngineBuddy`, ready for GitHub (docs/decisions/014).
 
 ---
 

@@ -2,7 +2,7 @@
   {
     "type": "system",
     "subtype": "init",
-    "cwd": "<HOME>\\AppData\\Local\\Claude-Data\\claude_pzs8sxrjxfjjc\\scratch-workspaces\\58172196-5e3d-475b-8a8b-d12e9752b69e\\75b04314-d321-4345-8bd4-42a5e49281b3\\scratch-2026-10-31-6bde1e\\spikes\\agent\\sandbox",
+    "cwd": "<HOME>\\projects\\enginebuddy\\spikes\\agent\\sandbox",
     "session_id": "5f106f8e-dd1c-4e63-91df-8cad4eff8105",
     "tools": ["Bash", "Glob", "Grep", "Read", "mcp__enginebuddy__get_system_info"],
     "mcp_servers": [
@@ -136,10 +136,10 @@
     "product_feedback_disabled": false,
     "uuid": "bc6fe28b-b2a3-4d6d-8593-d4321a38fdf5",
     "memory_paths": {
-      "auto": "<HOME>\\.claude\\projects\\<HOME-DASHED>-AppData-Local-Claude-Data-claude-pzs8sxrjxfjjc-scratch-workspaces-58172196-5e3d-475b-8a8b-d12e9752b69e-75b04314-d321-4345-8bd4-42a5e49281b3-scratch-2026-10-31-6bde1e-spikes-agent-sandbo-1bukwl\\memory\\"
+      "auto": "<HOME>\\.claude\\projects\\<HOME-DASHED>-projects-enginebuddy\\memory\\"
     },
-    "scratchpad_path": "<HOME>\\AppData\\Local\\Temp\\claude\\<HOME-DASHED>-AppData-Local-Claude-Data-claude-pzs8sxrjxfjjc-scratch-workspaces-58172196-5e3d-475b-8a8b-d12e9752b69e-75b04314-d321-4345-8bd4-42a5e49281b3-scratch-2026-10-31-6bde1e-spikes-agent-sandbo-1bukwl\\5f106f8e-dd1c-4e63-91df-8cad4eff8105\\scratchpad",
-    "original_cwd": "<HOME>\\AppData\\Local\\Claude-Data\\claude_pzs8sxrjxfjjc\\scratch-workspaces\\58172196-5e3d-475b-8a8b-d12e9752b69e\\75b04314-d321-4345-8bd4-42a5e49281b3\\scratch-2026-10-31-6bde1e\\spikes\\agent\\sandbox",
+    "scratchpad_path": "<HOME>\\AppData\\Local\\Temp\\claude\\<HOME-DASHED>-projects-enginebuddy\\5f106f8e-dd1c-4e63-91df-8cad4eff8105\\scratchpad",
+    "original_cwd": "<HOME>\\projects\\enginebuddy\\spikes\\agent\\sandbox",
     "additional_directories": [],
     "messaging_socket_path": "\\\\.\\pipe\\LOCAL\\cc-msg-1c398260e67ce35fe169600b9f418d59",
     "fast_mode_state": "off",

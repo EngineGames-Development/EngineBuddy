@@ -10,3 +10,6 @@ spikes/*/layout.json
 spikes/*/shot-*.png
 spikes/agent/sandbox/
 spikes/window/quit
+
+# packaged builds
+release/

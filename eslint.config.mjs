@@ -57,6 +57,11 @@ export default tseslint.config(
     },
   },
   {
+    // Build scripts run in plain Node.
+    files: ['scripts/**'],
+    languageOptions: { globals: { console: 'readonly', process: 'readonly', Buffer: 'readonly' } },
+  },
+  {
     files: ['src/core/**', 'src/shared/**'],
     rules: { 'no-restricted-imports': ['error', { paths: [noElectron, ...noChildProcess] }] },
   },

@@ -1,0 +1,47 @@
+# Windows builds: `npm run dist` → release/EngineBuddy-Setup-<version>.exe (installer) and
+# release/EngineBuddy-<version>-portable.exe (no install). Not code-signed (docs/security-audit.md R8).
+appId: dev.enginegames.enginebuddy
+productName: EngineBuddy
+directories:
+  output: release
+  buildResources: build
+files:
+  - out/**
+  - package.json
+  # The Agent SDK ships its own 320 MB claude.exe. EngineBuddy always uses your installed Claude Code
+  # (pathToClaudeCodeExecutable), so it stays out of the package.
+  - '!node_modules/@anthropic-ai/claude-agent-sdk-*/**'
+  - '!**/*.map'
+asar: true
+
+# Electron fuses (SECURITY.md §7, docs/security-audit.md F5): a packaged EngineBuddy can't be
+# turned into a general-purpose Node runtime or debugged from the command line, and only loads its
+# own, integrity-checked app.asar.
+electronFuses:
+  runAsNode: false
+  enableNodeOptionsEnvironmentVariable: false
+  enableNodeCliInspectArguments: false
+  enableEmbeddedAsarIntegrityValidation: true
+  onlyLoadAppFromAsar: true
+  enableCookieEncryption: true
+  # Our pages are bundled files loaded over file://, which needs this.
+  grantFileProtocolExtraPrivileges: true
+
+win:
+  icon: build/icon.png
+  target:
+    - target: nsis
+      arch: [x64]
+    - target: portable
+      arch: [x64]
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  artifactName: EngineBuddy-Setup-${version}.${ext}
+
+portable:
+  artifactName: EngineBuddy-${version}-portable.${ext}
